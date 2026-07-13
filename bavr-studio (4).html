@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B.A.V.R. Studio — UCBH · Outil clinique PAPPE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
+<style>
+:root{
+  --vert-fonce:#0F4C3A; --vert:#1E8A5E; --tint:#E8F4EE; --encre:#1B2A3A;
+  --gris:#66727E; --ligne:#D8E2DE; --papier:#FBFCFB; --or:#C9A227;
+  --b:#B5534C; --a:#DD9A3C; --v:#2E9E9E; --r:#3B6EA5;
+  --b-pale:#F7ECEB; --a-pale:#FBF3E5; --v-pale:#E7F4F4; --r-pale:#EAF0F7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI",system-ui,Calibri,sans-serif;color:var(--encre);background:var(--papier);font-size:15px;line-height:1.5}
+h1,h2,h3,.serif{font-family:Georgia,Cambria,serif}
+button{font-family:inherit;cursor:pointer}
+textarea,input[type=text],input[type=date]{width:100%;padding:9px 11px;border:1px solid var(--ligne);border-radius:6px;font-family:inherit;font-size:14px;background:#fff}
+textarea{min-height:70px;resize:vertical}
+textarea:focus,input:focus{outline:2px solid var(--vert);outline-offset:1px}
+.hidden{display:none!important}
+
+/* ---------- Porte d'accès ---------- */
+#gate{position:fixed;inset:0;background:var(--vert-fonce);display:flex;align-items:center;justify-content:center;z-index:100}
+.gate-card{background:#fff;border-radius:12px;padding:38px 40px;max-width:400px;width:92%;text-align:center}
+.gate-card .logo{font-size:12px;letter-spacing:4px;color:var(--vert);font-weight:700;margin-bottom:14px}
+.gate-card h1{font-size:26px;margin-bottom:6px}
+.gate-card p{color:var(--gris);font-size:13px;margin-bottom:20px}
+.gate-card input{text-align:center;letter-spacing:2px;margin-bottom:12px}
+.gate-card button{width:100%;background:var(--vert);color:#fff;border:none;border-radius:6px;padding:11px;font-size:15px;font-weight:600}
+.gate-card .err{color:var(--b);font-size:13px;margin-top:10px;min-height:18px}
+
+/* ---------- Coquille ---------- */
+header.app{background:var(--vert-fonce);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header.app .brand{font-size:11px;letter-spacing:3px;font-weight:700;color:#A9C9BB}
+header.app h1{font-size:19px;font-weight:600;flex:1;min-width:200px}
+.lang-btn,.ghost-btn{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:5px;padding:6px 12px;font-size:13px}
+.lang-btn:hover,.ghost-btn:hover{background:rgba(255,255,255,.12)}
+nav.tabs{display:flex;gap:4px;background:#fff;border-bottom:2px solid var(--ligne);padding:0 16px;overflow-x:auto}
+nav.tabs button{background:none;border:none;padding:13px 16px;font-size:14px;color:var(--gris);border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button.on{color:var(--vert-fonce);font-weight:700;border-bottom-color:var(--vert)}
+main{max-width:980px;margin:0 auto;padding:26px 20px 80px}
+.panel h2{font-size:23px;margin-bottom:4px}
+.panel .sub{color:var(--gris);font-size:14px;margin-bottom:22px}
+.card{background:#fff;border:1px solid var(--ligne);border-radius:10px;padding:20px 22px;margin-bottom:18px}
+.card h3{font-size:15px;margin-bottom:12px;color:var(--vert-fonce)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+label.f{display:block;font-size:12.5px;font-weight:600;color:var(--gris);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+.chk{display:flex;gap:9px;align-items:flex-start;padding:7px 4px;border-radius:6px}
+.chk:hover{background:var(--tint)}
+.chk input{margin-top:3px;accent-color:var(--vert)}
+.chk span{font-size:14px}
+.hint{font-size:12.5px;color:var(--gris);font-style:italic;margin-top:6px}
+.pill-note{background:var(--tint);border-left:3px solid var(--vert);padding:10px 14px;border-radius:0 8px 8px 0;font-size:13.5px;margin:12px 0}
+.intent{background:#F5F8F7;border:1px solid var(--ligne);border-radius:8px;padding:10px 14px;margin:6px 0 16px;font-size:12.5px;line-height:1.55}
+.intent .ir{margin:3px 0}
+.intent b{color:var(--vert-fonce);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+
+/* ---------- Rail B.A.V.R. (signature) ---------- */
+.rail{display:flex;gap:0;margin:20px 0 26px;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(27,42,58,.08)}
+.rail button{flex:1;border:none;padding:14px 6px 12px;color:#fff;opacity:.45;transition:opacity .2s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rail button.on{opacity:1}
+.rail button.done{opacity:.8}
+.rail .big{font-family:Georgia,serif;font-size:24px;font-weight:700}
+.rail .lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.rail .rb{background:var(--b)} .rail .ra{background:var(--a)} .rail .rv{background:var(--v)} .rail .rr{background:var(--r)}
+.step{border-top:5px solid;border-radius:10px;background:#fff;border:1px solid var(--ligne);padding:22px}
+.step.sb{border-top-color:var(--b);background:linear-gradient(var(--b-pale),#fff 90px)}
+.step.sa{border-top-color:var(--a);background:linear-gradient(var(--a-pale),#fff 90px)}
+.step.sv{border-top-color:var(--v);background:linear-gradient(var(--v-pale),#fff 90px)}
+.step.sr{border-top-color:var(--r);background:linear-gradient(var(--r-pale),#fff 90px)}
+.step h3{font-size:18px;margin-bottom:2px}
+.step .def{font-size:13px;color:var(--gris);margin-bottom:14px}
+.phr{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.phr button{background:#fff;border:1px solid var(--ligne);border-radius:20px;padding:6px 13px;font-size:12.5px;color:var(--encre)}
+.phr button:hover{border-color:var(--vert);background:var(--tint)}
+.navrow{display:flex;justify-content:space-between;margin-top:18px}
+.btn{background:var(--vert);color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:600}
+.btn.sec{background:#fff;color:var(--vert-fonce);border:1px solid var(--ligne)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* ---------- Rapport ---------- */
+#report{background:#fff;border:1px solid var(--ligne);border-radius:10px;padding:34px 38px}
+#report .rp-head{border-bottom:3px solid var(--vert);padding-bottom:12px;margin-bottom:18px}
+#report .rp-head .brand{font-size:10px;letter-spacing:3px;color:var(--vert);font-weight:700}
+#report h2{font-size:22px}
+#report h4{font-family:Georgia,serif;font-size:15px;color:var(--vert-fonce);margin:18px 0 6px;border-bottom:1px solid var(--ligne);padding-bottom:4px}
+#report p,#report li{font-size:13.5px}
+#report ul{padding-left:20px}
+#report .meta{color:var(--gris);font-size:12.5px}
+#report .empty{color:var(--gris);font-style:italic}
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+@media print{
+  header.app,nav.tabs,.toolbar,#gate{display:none!important}
+  main{padding:0;max-width:100%}
+  .panel.hidden{display:none!important}
+  #report{border:none;padding:10px}
+  body{background:#fff}
+}
+footer.app{border-top:1px solid var(--ligne);padding:14px 22px;font-size:11.5px;color:var(--gris);text-align:center}
+.saved{font-size:12px;color:var(--vert);min-width:110px;text-align:right}
+</style>
+</head>
+<body>
+
+<!-- Porte d'accès professionnelle -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="logo">U C B H</div>
+    <h1 class="serif">B.A.V.R. Studio</h1>
+    <p data-i="gate.sub">Outil clinique PAPPE — réservé aux professionnel·le·s formé·e·s. Entrez votre code d'accès.</p>
+    <input type="text" id="gateCode" placeholder="Code d'accès" autocomplete="off">
+    <button onclick="unlock()" data-i="gate.btn">Entrer</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+
+<header class="app">
+  <span class="brand">UCBH</span>
+  <h1 class="serif">B.A.V.R. Studio <span style="font-size:12px;color:#A9C9BB;font-weight:400" data-i="hd.tag">· Du locus externe au locus interne fonctionnel</span></h1>
+  <span class="saved" id="savedMsg"></span>
+  <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+  <button class="ghost-btn" onclick="resetAll()" data-i="hd.new">Nouveau dossier</button>
+</header>
+
+<div style="background:#7A2E2E;color:#fff;text-align:center;padding:7px 14px;font-size:12px;font-weight:600" data-i="proto.banner">⚠ PROTOTYPE — ne pas saisir de renseignements personnels ou de santé identifiables. Authentification, chiffrement et journal d'accès non encore implémentés.</div>
+
+<nav class="tabs">
+  <button id="tab-guide" class="on" onclick="go('guide',this)" data-i="tab.g">Guide</button>
+  <button id="tab-dossier" onclick="go('dossier',this)" data-i="tab.d">1 · Dossier</button>
+  <button id="tab-pappe" onclick="go('pappe',this)" data-i="tab.p">2 · Évaluation PAPPE</button>
+  <button id="tab-bavr" onclick="go('bavr',this)" data-i="tab.b">3 · Séance B.A.V.R.</button>
+  <button id="tab-ecart" onclick="go('ecart',this)" data-i="tab.e">4 · Écart parcours-cible</button>
+  <button id="tab-wsib" onclick="go('wsib',this)" data-i="tab.w">5 · WSIB</button>
+  <button id="tab-rapport" onclick="go('rapport',this)" data-i="tab.r">6 · Rapport</button>
+</nav>
+
+<main>
+
+<!-- ============ 0. GUIDE ============ -->
+<section class="panel" id="p-guide">
+  <h2 class="serif" data-i="g.h">Comment fonctionne B.A.V.R. Studio</h2>
+  <p class="sub" data-i="g.sub">Un outil qui guide votre démarche clinique — sans jamais penser à votre place.</p>
+
+  <div class="pill-note" style="border-left-color:var(--or);background:#FBF6E7" data-i="g.principe"><b>Principe fondamental :</b> cet outil ne produit aucun diagnostic et ne propose aucune interprétation automatique. Les listes, questions et formulations proviennent du manuel clinique UCBH — elles soutiennent votre jugement professionnel. <b>Tout ce qui est noté vient de vous</b>, l'intervenant·e : vos observations, vos hypothèses, vos mots. Vous restez l'unique responsable clinique du dossier.</div>
+
+  <div class="pill-note" style="border-left-color:var(--vert)" data-i="g.transversal"><b>Principe transversal de développement :</b> chaque nouvelle fonctionnalité de cet outil doit répondre à une question — « Comment cela aide-t-il l'intervenant·e à mieux comprendre la personne et à mieux structurer son raisonnement clinique? » Si une fonctionnalité ne répond pas à cette question, elle n'a pas sa place ici.</div>
+
+  <div class="card">
+    <h3 data-i="g.parcours">Le parcours clinique en 6 modules</h3>
+    <div class="chk"><span data-i="g.s1"><b>1 · Dossier</b> — Vous ouvrez la séance : code client anonymisé, date, contexte et demande initiale. Aucune donnée ne quitte votre navigateur — rien n'est transmis à UCBH ni à personne.</span></div>
+    <div class="chk"><span data-i="g.s2"><b>2 · Diagnostic PAPPE</b> — Avant d'intervenir, vous observez. La grille (issue du PAPPE 06.1) vous aide à repérer les signes du discours et de la posture : vous cochez <i>ce que vous observez</i>, pas ce que l'outil devine. Les questions d'exploration sont des amorces à poser en séance. Vous situez ensuite votre lecture du locus of control — externe, mixte ou interne.</span></div>
+    <div class="chk"><span data-i="g.s3"><b>3 · Séance B.A.V.R.</b> — Le cœur de l'outil : le rail Barrière → Analyse → Validation → Réorientation structure la séance en direct. À chaque étape, des repères du manuel (exemples, fonctions, formulations) sont cliquables pour s'ajouter à vos notes — un gain de temps, jamais un substitut. <b>La règle d'or : le V avant le R</b> — on ne réoriente jamais une personne qui ne s'est pas sentie reçue.</span></div>
+    <div class="chk"><span data-i="g.s4"><b>4 · Écart parcours-cible</b> — Vous pouvez téléverser le CV (PDF, Word ou texte) : le texte en est extrait <b>entièrement dans ce navigateur</b>, rien n'est envoyé nulle part. Vous relisez, corrigez au besoin, puis comparez vous-même le parcours à la cible visée — l'outil ne juge jamais un CV.</span></div>
+    <div class="chk"><span data-i="g.s5"><b>5 · Module WSIB</b> — Pour les dossiers de retour au travail : structure Avant / Pendant / Après pour préparer et soutenir la personne, en complément du dossier géré par la WSIB.</span></div>
+    <div class="chk"><span data-i="g.s6"><b>6 · Rapport</b> — L'outil assemble vos notes en une synthèse professionnelle imprimable (PDF) pour le dossier. Relisez toujours avant d'imprimer : le rapport reflète vos mots, il porte votre signature clinique.</span></div>
+  </div>
+
+  <div class="card">
+    <h3 data-i="g.bavrh">Le but de chaque étape B.A.V.R.</h3>
+    <div class="chk"><span data-i="g.b"><b style="color:var(--b)">B — Barrière (écouter à trois niveaux).</b> Recueillir ce que la personne <i>dit</i> (barrière déclarée), ce qu'elle <i>pense sans le dire</i> (implicite) et ce qu'elle <i>ressent</i> (émotionnelle). C'est le niveau émotionnel qui bloque l'action — le repérer, c'est déjà intervenir.</span></div>
+    <div class="chk"><span data-i="g.a"><b style="color:var(--a)">A — Analyse (comprendre la fonction).</b> Se demander : <i>que fait la barrière pour la personne?</i> Protection, narration, migration, relation. Vous cochez les fonctions que vous jugez actives et formulez <b>vos hypothèses cliniques</b> — c'est votre raisonnement professionnel, l'outil ne fait que vous offrir le cadre du manuel pour le structurer. Comprendre la fonction = comprendre comment intervenir.</span></div>
+    <div class="chk"><span data-i="g.v"><b style="color:var(--v)">V — Validation (recevoir avant de réorienter).</b> Dire à la personne : « tu as été entendue ». Sans ce temps, la réorientation arrive trop vite et la personne se ferme — même si la stratégie est juste. Nuance clé : valider le vécu ≠ valider la croyance rigide.</span></div>
+    <div class="chk"><span data-i="g.r"><b style="color:var(--r)">R — Réorientation (déplacer le locus).</b> Transformer la barrière en action réaliste, mesurable, immédiate — cognitive (ouvrir une brèche), stratégique (le premier petit pas), identitaire (reconnecter aux forces). La réorientation n'est pas un conseil : c'est un déplacement du locus externe rigide vers un locus interne fonctionnel, sans confrontation ni rupture d'alliance.</span></div>
+  </div>
+
+  <div class="card">
+    <h3 data-i="g.ethh">Confidentialité et éthique</h3>
+    <div class="chk"><span data-i="g.e1">Utilisez toujours un <b>code client</b> (initiales, numéro de dossier) — jamais le nom complet.</span></div>
+    <div class="chk"><span data-i="g.e2">Les données restent <b>dans ce navigateur uniquement</b> (sauvegarde locale). Fermez la session sur un poste partagé avec « Nouveau dossier » après avoir imprimé le rapport.</span></div>
+    <div class="chk"><span data-i="g.e3">L'outil est réservé aux <b>professionnel·le·s formé·e·s</b> à la méthode B.A.V.R. (licence UCBH). Il complète votre formation — il ne la remplace pas.</span></div>
+  </div>
+
+  <div class="navrow"><span></span><button class="btn" onclick="go('dossier',document.getElementById('tab-dossier'))" data-i="g.start">Commencer une séance →</button></div>
+
+  <div class="card">
+    <h3 data-i="silfa.guideh">À propos de SILFA — le parcours linguistique d'UCBH</h3>
+    <p style="font-size:13.5px" data-i="silfa.guidebody">SILFA est un parcours d'apprentissage linguistique personnalisé, à composer selon les besoins de la personne : <b>LEARN</b> (apprentissage autonome via FrancoVie — exercices, préparation TEF, ~49 $/mois), <b>PRACTICE</b> (séance individuelle hebdomadaire + conversation en petit groupe — ~149 $/mois), et <b>LIVE</b> (immersion réelle : bénévolat, réseautage, activités communautaires — niveau A2+ requis, ~249 $/mois). PAPPE identifie le besoin; SILFA y répond. Cliquer sur un bouton de recommandation ouvre FrancoVie dans un nouvel onglet — aucune donnée client n'est transmise.</p>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--or)">
+    <h3 data-i="cs.h">Cas illustratif (anonymisé) — du raisonnement PAPPE à la réorientation B.A.V.R.</h3>
+    <p class="hint" data-i="cs.sub">Un échange réel, résumé et anonymisé, pour montrer comment PAPPE prépare la séance B.A.V.R. Aucun élément identifiant n'est conservé.</p>
+
+    <p style="margin-top:10px"><b data-i="cs.ctx">Contexte :</b> <span data-i="cs.ctxv">M., formé comme électricien à l'étranger, immigrant francophone. Demande initiale : trouver un emploi dans son domaine.</span></p>
+
+    <h4 style="font-family:Georgia,serif;font-size:14px;color:var(--vert-fonce);margin:14px 0 6px" data-i="cs.pappeh">PAPPE — ce que l'entretien a révélé</h4>
+    <ul style="padding-left:20px;font-size:13.5px;line-height:1.7">
+      <li data-i="cs.p1"><b>Personne :</b> parcours concret d'électricien; démarches d'immigration en cours; famille restée au pays.</li>
+      <li data-i="cs.p2"><b>Adaptation :</b> diplôme non directement reconnu; un parcours d'équivalence en français existe, mais avec un délai d'environ deux ans; le profil actuel n'a encore jamais été testé auprès d'employeurs; une contrainte de santé (vision) est nommée en cours d'échange, avec un enjeu de sécurité en électricité.</li>
+      <li data-i="cs.p3"><b>Parcours (ressources) :</b> expérience concrète du métier, forte motivation, réseau communautaire actif, ouverture à des pistes connexes.</li>
+      <li data-i="cs.p4"><b>Projet :</b> retrouver un emploi stable et la reconnaissance de sa compétence; intérêt pour, un jour, bâtir sa propre entreprise.</li>
+      <li data-i="cs.p5"><b>Employabilité (écart) :</b> aucune candidature testée avec le profil actuel; des pistes de formation courte et des pistes entrepreneuriales connexes restent à explorer.</li>
+    </ul>
+
+    <h4 style="font-family:Georgia,serif;font-size:14px;color:var(--vert-fonce);margin:14px 0 6px" data-i="cs.bavrh">B.A.V.R. — comment PAPPE a préparé la séance</h4>
+    <p style="font-size:13.5px"><b style="color:var(--b)" data-i="cs.bb">B —</b> <span data-i="cs.bv">Déclarée : « Mon diplôme n'est pas reconnu ici. » Implicite : l'idée que rien n'est possible avant la reconnaissance complète. Émotionnelle : la crainte d'échouer en postulant « trop tôt », et une fatigue réelle du parcours migratoire.</span></p>
+    <p style="font-size:13.5px"><b style="color:var(--a)" data-i="cs.ab">A —</b> <span data-i="cs.av">Attendre la reconnaissance complète protège contre un refus immédiat — fonction protectrice légitime. Le délai institutionnel de deux ans est réel, pas imaginé : il nourrit un sentiment d'impuissance compréhensible. La contrainte de vision s'ajoute et mérite d'être nommée sans être ni minimisée, ni dramatisée.</span></p>
+    <p style="font-size:13.5px"><b style="color:var(--v)" data-i="cs.vb">V —</b> <span data-i="cs.vv">Reconnaître que le délai de deux ans est un obstacle réel. Reconnaître que les coûts (lunettes, formation) sont une contrainte concrète et légitime à nommer — pas un détail secondaire.</span></p>
+    <p style="font-size:13.5px"><b style="color:var(--r)" data-i="cs.rb">R —</b> <span data-i="cs.rv">Cognitive : « Le diplôme complet n'est pas forcément nécessaire pour un premier pas — qu'est-ce qui pourrait être tenté dès maintenant, avec ce que vous avez déjà? » Stratégique : tester 2-3 candidatures avec le profil actuel, explorer une certification courte en parallèle, examiner une piste connexe à potentiel entrepreneurial. Identitaire : l'expérience déjà acquise est valorisée comme un actif transférable — pas comme un diplôme invalide. Premier pas convenu : la personne partage son CV; l'intervenant identifie des offres pertinentes et revient avec des pistes concrètes de formation (durée, coût) au prochain rendez-vous.</span></p>
+
+    <div class="pill-note" style="margin-top:14px" data-i="cs.note">Ce que ce cas illustre : la barrière à approfondir ne semblait pas être uniquement la reconnaissance du diplôme — la croyance qu'il fallait attendre deux ans avant d'agir jouait aussi un rôle important. PAPPE a permis de voir les ressources et le projet AVANT de s'arrêter sur l'écart; B.A.V.R. a transformé cette compréhension provisoire en un premier pas réaliste, cette semaine, sans attendre.</div>
+  </div>
+</section>
+
+<!-- ============ 1. DOSSIER ============ -->
+<section class="panel hidden" id="p-dossier">
+  <h2 class="serif" data-i="d.h">Dossier client</h2>
+  <p class="sub" data-i="d.sub">Identifiez la personne par un code — aucune donnée n'est transmise : tout reste dans ce navigateur.</p>
+  <div class="card">
+    <div class="grid2">
+      <div><label class="f" data-i="d.code">Code client (initiales ou numéro)</label><input type="text" id="cCode" oninput="save()"></div>
+      <div><label class="f" data-i="d.date">Date de la séance</label><input type="date" id="cDate" oninput="save()"></div>
+    </div>
+    <label class="f" data-i="d.ctx">Contexte et demande initiale</label>
+    <textarea id="cCtx" oninput="save()" data-ph="d.ctx.ph" placeholder="Parcours migratoire, situation d'emploi, demande exprimée…"></textarea>
+    <label class="f" data-i="d.int">Intervenant·e</label>
+    <input type="text" id="cInt" oninput="save()">
+    <label class="f" data-i="d.crm">ID client CRM UCBH (facultatif — permet le pont vers le CRM sans nommer la personne ici)</label>
+    <input type="text" id="cCRM" oninput="save()" placeholder="UCBH-000000">
+    <label class="f" data-i="silfa.recap">Recommandations SILFA activées durant la séance</label>
+    <input type="text" id="silfaRec" readonly style="background:#F5F8F7;color:var(--vert-fonce);font-weight:600">
+  </div>
+  <div class="pill-note" data-i="d.note">Repère clinique : « Reconnaître le réel ET ouvrir ce qui est modifiable. » — Manuel UCBH, section 01</div>
+</section>
+
+<!-- ============ 2. PAPPE ============ -->
+<section class="panel hidden" id="p-pappe">
+  <h2 class="serif" data-i="pp.h">PAPPE</h2>
+  <p class="sub" data-i="pp.def" style="font-size:14.5px">Processus d'Analyse de la Personne, de son Adaptation, de son Parcours, de son Projet et de son Employabilité — un cadre clinique qui permet de comprendre simultanément la personne, son parcours, son potentiel, ses obstacles et son projet professionnel, afin de construire un plan d'accompagnement personnalisé. PAPPE ne classe pas la personne — il prépare le raisonnement clinique qui mènera à la séance B.A.V.R.</p>
+
+  <div class="pill-note" style="border-left-color:var(--or);background:#FBF6E7">
+    <b data-i="pp.goalh">À la fin de PAPPE, vous devriez pouvoir répondre à :</b>
+    <ul style="padding-left:20px;margin-top:6px;font-size:13.5px">
+      <li data-i="pp.goal1">Qui est cette personne — au-delà de la demande initiale?</li>
+      <li data-i="pp.goal2">Où se situe la rupture, et depuis quand?</li>
+      <li data-i="pp.goal3">Quelles sont ses ressources et ses forces réelles?</li>
+      <li data-i="pp.goal4">Que représente son objectif — pas seulement quel emploi, mais pourquoi?</li>
+      <li data-i="pp.goal5">Quel est l'écart entre son projet et sa situation actuelle, et est-il modifiable?</li>
+    </ul>
+  </div>
+
+  <!-- AXE P — PERSONNE -->
+  <div class="card">
+    <h3><span style="color:var(--vert)">P</span> — <span data-i="pp.axP">Personne</span></h3>
+    <p class="hint" data-i="pp.axPsub">Comprendre la personne avant son problème. Qui consulte, et pourquoi maintenant?</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.P.why">Comprendre qui consulte, avant de se pencher sur le problème.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.P.obs">Le ton du récit, ce qui est mis en avant en premier, l'urgence perçue.</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.P.leads">Est-ce une démarche volontaire ou une référence? Qu'est-ce qui a changé récemment?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.P.end">Je connais le contexte de vie et ce qui amène la personne aujourd'hui.</span></div>
+    </div>
+    <div class="phr" id="axPq"></div>
+    <textarea id="paPers" oninput="save()"></textarea>
+  </div>
+
+  <!-- AXE A — ADAPTATION -->
+  <div class="card">
+    <h3><span style="color:var(--vert)">A</span> — <span data-i="pp.axA">Adaptation</span></h3>
+    <p class="hint" data-i="pp.axAsub">La rupture : ce qui s'est cassé, et les obstacles psychosociaux, culturels ou systémiques rencontrés.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.A.why">Repérer où se situe la rupture, entre les obstacles réels et perçus.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.A.obs">Le discours (grille ci-dessous), le locus of control, les éléments culturels et linguistiques.</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.A.leads">La barrière nommée est-elle la seule? Qu'est-ce qui n'a pas encore été dit?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.A.end">Je sais où se situe la rupture, et quel locus domine.</span></div>
+    </div>
+    <label class="f" data-i="pp.grid">Grille d'observation</label>
+    <div id="obsList"></div>
+    <label class="f" data-i="pp.qh">Questions d'exploration</label>
+    <div class="phr" id="expQ"></div>
+    <label class="f" data-i="pp.notes">Notes d'exploration</label>
+    <textarea id="pNotes" oninput="save()"></textarea>
+    <label class="f" data-i="pp.locus">Lecture du locus of control (Rotter, 1954)</label>
+    <div class="chk"><input type="radio" name="locus" value="externe" onchange="save()"><span data-i="pp.le"><b>Locus externe dominant</b> — « Ce n'est pas entre mes mains » : marché, accent, diplôme, discrimination. Fonction protectrice probable.</span></div>
+    <div class="chk"><input type="radio" name="locus" value="mixte" onchange="save()"><span data-i="pp.lm"><b>Mixte / en mouvement</b> — reconnaît une marge d'action par moments.</span></div>
+    <div class="chk"><input type="radio" name="locus" value="interne" onchange="save()"><span data-i="pp.li"><b>Locus interne fonctionnel</b> — « Il y a des choses que je peux influencer. »</span></div>
+    <p class="hint" data-i="pp.trap">Piège clinique : valider trop = renforcement du schéma · confronter trop tôt = perte d'alliance. L'objectif n'est pas un locus interne total — c'est un équilibre fonctionnel.</p>
+    <div class="pill-note" style="border-left-color:var(--vert)">
+      <b data-i="silfa.trigA">Si la barrière linguistique domine (« je n'arrive pas à parler au travail », « je suis bloqué en français ») :</b>
+      <div class="hint" style="margin:6px 0" data-i="silfa.check">Vérifier avant d'envisager : la difficulté concerne-t-elle réellement la langue, ou plutôt la confiance, l'anxiété, le vocabulaire spécialisé? Dans quelle langue la personne veut-elle travailler? Quel est son niveau fonctionnel actuel? A-t-elle déjà accès à un programme financé? SILFA est-il accessible financièrement pour elle? A-t-elle donné son accord pour cette piste?</div>
+      <div style="margin-top:8px"><button class="btn sec" onclick="window.open(SILFA_URL,'_blank');markSilfa('PRACTICE')" data-i="silfa.btnP">→ Envisager SILFA · PRACTICE (confiance et communication)</button></div>
+    </div>
+  </div>
+
+  <!-- AXE P — PARCOURS -->
+  <div class="card">
+    <h3><span style="color:var(--vert)">P</span> — <span data-i="pp.axP2">Parcours (ressources et forces)</span></h3>
+    <p class="hint" data-i="pp.axP2sub">On ne part pas des manques. Faire émerger les ressources avant les obstacles.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.R.why">Faire émerger les ressources et forces réelles, avant de nommer les manques.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.R.obs">Les réussites passées, les compétences naturelles, le réseau existant.</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.R.leads">Quelles forces la personne minimise-t-elle elle-même?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.R.end">J'ai une liste concrète de ressources mobilisables.</span></div>
+    </div>
+    <div class="phr" id="axResQ"></div>
+    <textarea id="paRes" oninput="save()"></textarea>
+    <div class="pill-note" style="border-left-color:var(--vert)">
+      <b data-i="silfa.trigL">Si absence d'expérience canadienne, de bénévolat ou de réseau :</b>
+      <div style="margin-top:8px"><button class="btn sec" onclick="window.open(SILFA_URL,'_blank');markSilfa('LIVE')" data-i="silfa.btnL">→ Envisager SILFA · LIVE (immersion, bénévolat, réseautage — niveau A2+ requis)</button></div>
+    </div>
+  </div>
+
+  <!-- AXE P — PROJET -->
+  <div class="card">
+    <h3><span style="color:var(--vert)">P</span> — <span data-i="pp.axProj">Projet (l'objectif, et son sens)</span></h3>
+    <p class="hint" data-i="pp.axProjsub">Pas seulement quel emploi — pourquoi celui-là, et ce qu'il représente.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.Proj.why">Comprendre le sens du projet, pas seulement le poste visé.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.Proj.obs">Ce qui motive réellement le choix : sécurité, intérêt, nécessité, ou influence de l'entourage.</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.Proj.leads">Le choix semble-t-il motivé par la peur de ne pas trouver de travail, plutôt que par un intérêt réel? D'autres options ont-elles été envisagées?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.Proj.end">Je comprends pourquoi ce projet, et je peux nommer ce qui le motive réellement.</span></div>
+    </div>
+    <div class="phr" id="axProjQ"></div>
+    <textarea id="paProj" oninput="save()"></textarea>
+
+    <label class="f" data-i="proj.motL">Ce qui semble motiver ce choix (cochez ce qui s'applique — peut être multiple)</label>
+    <div class="chk"><input type="checkbox" id="motInt" onchange="save()"><span data-i="proj.mot1">Intérêt réel pour le domaine</span></div>
+    <div class="chk"><input type="checkbox" id="motSec" onchange="save()"><span data-i="proj.mot2">Recherche de sécurité (stabilité, revenu prévisible)</span></div>
+    <div class="chk"><input type="checkbox" id="motNec" onchange="save()"><span data-i="proj.mot3">Nécessité (urgence financière, statut, délai)</span></div>
+    <div class="chk"><input type="checkbox" id="motPeur" onchange="save()"><span data-i="proj.mot4">Peur de ne pas trouver autre chose</span></div>
+    <div class="chk"><input type="checkbox" id="motInfl" onchange="save()"><span data-i="proj.mot5">Influence de l'entourage ou de la famille</span></div>
+    <label class="f" data-i="proj.autresL">Autres options envisagées ou évoquées</label>
+    <textarea id="projAutres" oninput="save()"></textarea>
+
+    <div class="pill-note" style="border-left-color:var(--vert)">
+      <b data-i="silfa.trigLe">Si l'objectif vise le TEF, les études ou un emploi qualifié :</b>
+      <div style="margin-top:8px"><button class="btn sec" onclick="window.open(SILFA_URL,'_blank');markSilfa('LEARN')" data-i="silfa.btnLe">→ Envisager SILFA · LEARN (préparation autonome, TEF, FrancoVie)</button></div>
+    </div>
+  </div>
+
+  <!-- FORMATION ENVISAGÉE -->
+  <div class="card">
+    <h3 data-i="form.h">Formation envisagée</h3>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.F.why">Vérifier que la formation envisagée sert réellement le projet — pas seulement qu'elle existe.</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.F.end">Je peux nommer si la formation est cohérente avec le projet et le marché, ou si elle mérite d'être questionnée.</span></div>
+    </div>
+    <div class="grid2">
+      <div><label class="f" data-i="form.f1">Formation souhaitée</label><input type="text" id="formNom" oninput="save()"></div>
+      <div><label class="f" data-i="form.f2">Durée</label><input type="text" id="formDuree" oninput="save()"></div>
+    </div>
+    <label class="f" data-i="form.f3">Raisons de ce choix</label>
+    <textarea id="formRaisons" oninput="save()"></textarea>
+    <label class="f" data-i="form.f4">Objectifs recherchés par cette formation</label>
+    <textarea id="formObj" oninput="save()"></textarea>
+    <div class="grid2">
+      <div><label class="f" data-i="form.f5">Autres formations envisagées</label><textarea id="formAutres" oninput="save()"></textarea></div>
+      <div><label class="f" data-i="form.f6">Contraintes financières</label><textarea id="formFin" oninput="save()"></textarea></div>
+    </div>
+    <div class="chk"><input type="checkbox" id="formCohProj" onchange="save()"><span data-i="form.coh1">Cohérente avec le projet professionnel</span></div>
+    <div class="chk"><input type="checkbox" id="formCohMarche" onchange="save()"><span data-i="form.coh2">Cohérente avec le marché du travail local</span></div>
+  </div>
+
+  <!-- AXE E — EMPLOYABILITÉ -->
+  <div class="card">
+    <h3><span style="color:var(--vert)">E</span> — <span data-i="pp.axE">Employabilité (l'écart)</span></h3>
+    <p class="hint" data-i="pp.axEsub">Le CV et le marché arrivent en dernier — jamais en premier. Poursuivre l'analyse à l'onglet suivant.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.E.why">Mesurer l'écart entre le projet et la réalité du marché — en dernier lieu seulement.</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.E.leads">L'écart est-il réel ou perçu? Est-il modifiable à court terme?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.E.end">Je peux nommer un premier pas réaliste vers l'objectif.</span></div>
+    </div>
+    <button class="btn sec" onclick="go('ecart',document.getElementById('tab-ecart'))" data-i="pp.axEbtn">Poursuivre vers l'Écart parcours-cible →</button>
+  </div>
+
+  <!-- LIENS À EXPLORER -->
+  <div class="card" style="border-left:4px solid var(--r)">
+    <h3 data-i="link.h">Liens à explorer</h3>
+    <p class="hint" data-i="link.sub">Repère les thèmes qui reviennent à plusieurs endroits dans ce que vous avez saisi (Personne, Adaptation, Parcours, Projet, Formation, CV). L'outil formule uniquement des questions ou des rapprochements — jamais de conclusions.</p>
+    <button class="btn sec" onclick="renderLinks()" data-i="link.btn">Rechercher des liens entre les informations saisies</button>
+    <div id="linksBox" class="hidden" style="margin-top:12px"></div>
+  </div>
+
+  <!-- PORTRAIT PAPPE PROVISOIRE -->
+  <div class="card" style="border-left:4px solid var(--or)">
+    <h3 data-i="port.h">Portrait PAPPE provisoire</h3>
+    <p class="hint" data-i="port.sub">Une synthèse à remplir vous-même à partir des cinq axes — pas un résumé généré automatiquement. Elle prépare le passage à B.A.V.R. sans qu'il faille reconstruire mentalement toute l'analyse.</p>
+
+    <label class="f" data-i="port.demande">Demande exprimée (ce que la personne demande officiellement)</label>
+    <textarea id="portDemande" oninput="save()"></textarea>
+
+    <label class="f" data-i="port.besoin">Besoin à approfondir (ce qui semble mériter d'être exploré davantage — sans affirmer qu'il s'agit du « vrai » besoin)</label>
+    <textarea id="portBesoin" oninput="save()"></textarea>
+
+    <div class="grid2">
+      <div>
+        <label class="f" data-i="port.ress">Ressources identifiées</label>
+        <textarea id="portRess" oninput="save()"></textarea>
+      </div>
+      <div>
+        <label class="f" data-i="port.barr">Barrières observées (réelles, perçues, ou encore indéterminées)</label>
+        <textarea id="portBarr" oninput="save()"></textarea>
+      </div>
+    </div>
+
+    <label class="f" data-i="port.pistes">Pistes d'exploration (hypothèses à vérifier — pas des conclusions)</label>
+    <textarea id="portPistes" oninput="save()"></textarea>
+
+    <label class="f" data-i="port.prio">Priorité immédiate (ce qui doit être traité avant le projet d'emploi, s'il y a lieu)</label>
+    <textarea id="portPrio" oninput="save()"></textarea>
+
+    <label class="f" data-i="port.transfert">Éléments à transférer vers B.A.V.R. (la ou les barrières qui méritent une intervention B.A.V.R.)</label>
+    <textarea id="portTransfert" oninput="save()"></textarea>
+
+    <button class="btn" onclick="go('bavr',document.getElementById('tab-bavr'))" style="margin-top:8px" data-i="port.gobavr">Passer à la séance B.A.V.R. →</button>
+  </div>
+</section>
+
+<!-- ============ 3. B.A.V.R. ============ -->
+<section class="panel hidden" id="p-bavr">
+  <h2 class="serif" data-i="bv.h">Séance guidée B.A.V.R.</h2>
+  <p class="sub" data-i="bv.sub">Barrière → Analyse → Validation → Réorientation. Avancez au rythme de la personne — le V avant le R, toujours.</p>
+
+  <div class="rail" id="rail">
+    <button class="rb on" onclick="stepGo(0)"><span class="big">B</span><span class="lbl" data-i="bv.b">Barrière</span></button>
+    <button class="ra" onclick="stepGo(1)"><span class="big">A</span><span class="lbl" data-i="bv.a">Analyse</span></button>
+    <button class="rv" onclick="stepGo(2)"><span class="big">V</span><span class="lbl" data-i="bv.v">Validation</span></button>
+    <button class="rr" onclick="stepGo(3)"><span class="big">R</span><span class="lbl" data-i="bv.r">Réorientation</span></button>
+  </div>
+
+  <!-- B -->
+  <div class="step sb" id="st0">
+    <h3 data-i="b.h">B — La barrière, à trois niveaux</h3>
+    <p class="def" data-i="b.def">Ce que la personne dit · croit · ressent. C'est le niveau émotionnel qui bloque l'action.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.B.why">Écouter à trois niveaux avant d'agir.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.B.obs">Les mots exacts (déclaré), les sous-entendus (implicite), l'émotion (affectif).</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.B.leads">Quelle est la version que la personne répète le plus souvent?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.B.end">J'ai une compréhension provisoire de la barrière, à ses trois niveaux, à vérifier avec la personne.</span></div>
+    </div>
+    <label class="f" data-i="b.1">1 · Barrière déclarée (niveau verbal — ce qu'elle exprime)</label>
+    <div class="phr" id="bDecl"></div>
+    <textarea id="b1" oninput="save()" placeholder="« C'est mon accent. » « Mon diplôme n'est pas reconnu. »…"></textarea>
+    <label class="f" data-i="b.2">2 · Barrière implicite (niveau cognitif — ce qu'elle pense sans le dire)</label>
+    <textarea id="b2" oninput="save()" placeholder="« Je ne suis pas assez bon. » « Je vais encore échouer. »…"></textarea>
+    <label class="f" data-i="b.3">3 · Barrière émotionnelle (niveau affectif — ce qu'elle ressent vraiment)</label>
+    <div class="phr" id="bEmo"></div>
+    <textarea id="b3" oninput="save()"></textarea>
+    <div class="navrow"><span></span><button class="btn" onclick="stepGo(1)" data-i="nav.a">Passer à l'Analyse →</button></div>
+  </div>
+
+  <!-- A -->
+  <div class="step sa hidden" id="st1">
+    <h3 data-i="a.h">A — Analyse psychosociale : que fait la barrière pour la personne?</h3>
+    <p class="def" data-i="a.def">Comprendre la fonction = comprendre comment intervenir. Cochez les fonctions actives et notez vos hypothèses.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.Av.why">Comprendre pourquoi cette barrière existe.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.Av.obs">Quelle fonction elle protège chez la personne.</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.Av.end">Je comprends la fonction de la barrière.</span></div>
+    </div>
+    <div id="fnList"></div>
+    <label class="f" data-i="a.notes">Vos hypothèses cliniques (votre raisonnement professionnel — l'outil ne propose rien)</label>
+    <textarea id="aNotes" oninput="save()" placeholder="Ex. : la barrière « accent » semble protéger contre le deuil du statut d'ingénieur; tester la réceptivité à un poste intermédiaire…"></textarea>
+    <p class="hint" style="margin-top:10px" data-i="a.reflect">Avant de continuer — êtes-vous certain·e que c'est la véritable barrière? Quelle preuve, dans ce que la personne a dit, soutient cette hypothèse? Existe-t-il une autre explication possible?</p>
+    <div class="navrow"><button class="btn sec" onclick="stepGo(0)">←</button><button class="btn" onclick="stepGo(2)" data-i="nav.v">Passer à la Validation →</button></div>
+  </div>
+
+  <!-- V -->
+  <div class="step sv hidden" id="st2">
+    <h3 data-i="v.h">V — Validation émotionnelle : recevoir avant de réorienter</h3>
+    <p class="def" data-i="v.def">Sans validation, la réorientation arrive trop vite et la personne se ferme. Valider le vécu ≠ valider la croyance rigide.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.V.why">Recevoir avant de réorienter.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.V.obs">La personne se sent-elle réellement entendue?</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.V.leads">Est-ce que je valide le vécu, ou la croyance rigide?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.V.end">La personne se sent comprise.</span></div>
+    </div>
+    <div class="pill-note" data-i="v.bank">Formulations clés — cliquez pour les ajouter à vos notes :</div>
+    <div class="phr" id="vBank"></div>
+    <label class="f" data-i="v.notes">Ce qui a été validé en séance</label>
+    <textarea id="vNotes" oninput="save()"></textarea>
+    <div class="navrow"><button class="btn sec" onclick="stepGo(1)">←</button><button class="btn" onclick="stepGo(3)" data-i="nav.r">Passer à la Réorientation →</button></div>
+  </div>
+
+  <!-- R -->
+  <div class="step sr hidden" id="st3">
+    <h3 data-i="r.h">R — Réorientation : transformer la barrière en action, sans confrontation</h3>
+    <p class="def" data-i="r.def">La réorientation n'est pas un conseil. C'est un déplacement du locus.</p>
+    <div class="intent">
+      <div class="ir"><b data-i="int.why">Pourquoi</b> — <span data-i="int.Re.why">Déplacer le locus, pas donner un conseil.</span></div>
+      <div class="ir"><b data-i="int.obs">Observer</b> — <span data-i="int.Re.obs">La réceptivité de la personne à un premier pas concret.</span></div>
+      <div class="ir"><b data-i="int.leads">Pistes</b> — <span data-i="int.Re.leads">Quel est le plus petit pas réaliste, cette semaine?</span></div>
+      <div class="ir"><b data-i="int.end">À la fin</b> — <span data-i="int.Re.end">La personne repart avec un pas concret et daté.</span></div>
+    </div>
+    <label class="f" data-i="r.cog">Réorientation cognitive — la brèche ouverte</label>
+    <div class="phr" id="rCog"></div>
+    <textarea id="r1" oninput="save()" placeholder="« Et dans tout ça, qu'est-ce qui dépend un peu de vous? »"></textarea>
+    <label class="f" data-i="r.strat">Réorientation stratégique — l'action réaliste, mesurable, immédiate</label>
+    <div class="phr" id="rStrat"></div>
+    <textarea id="r2" oninput="save()"></textarea>
+    <div class="grid2">
+      <div><label class="f" data-i="r.who">Premier petit pas convenu</label><input type="text" id="r3" oninput="save()"></div>
+      <div><label class="f" data-i="r.when">Échéance / prochain rendez-vous</label><input type="text" id="r4" oninput="save()"></div>
+    </div>
+    <label class="f" data-i="r.id">Réorientation identitaire — forces et réussites reconnectées</label>
+    <textarea id="r5" oninput="save()" placeholder="3 forces — 3 preuves — 3 applications dans le marché canadien"></textarea>
+    <p class="hint" style="margin-top:10px" data-i="r.reflect">La personne repart-elle avec une action réaliste — pas une solution miracle, un premier pas? Le pas convenu est-il mesurable et daté?</p>
+    <div class="pill-note" style="border-left-color:var(--vert)">
+      <b data-i="silfa.trigR">Si la barrière est « je ne parle pas assez bien », « je ne comprends pas les entretiens » :</b>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sec" onclick="window.open(SILFA_URL,'_blank');markSilfa('LEARN')" data-i="silfa.short.le">SILFA LEARN</button>
+        <button class="btn sec" onclick="window.open(SILFA_URL,'_blank');markSilfa('PRACTICE')" data-i="silfa.short.pr">SILFA PRACTICE</button>
+        <button class="btn sec" onclick="window.open(SILFA_URL,'_blank');markSilfa('LIVE')" data-i="silfa.short.li">SILFA LIVE</button>
+      </div>
+    </div>
+    <div class="navrow"><button class="btn sec" onclick="stepGo(2)">←</button><button class="btn" onclick="go('rapport',document.getElementById('tab-rapport'))" data-i="nav.rep">Générer le rapport →</button></div>
+  </div>
+</section>
+
+<!-- ============ 4. ÉCART PARCOURS-CIBLE ============ -->
+<section class="panel hidden" id="p-ecart">
+  <h2 class="serif" data-i="ec.h">Écart entre le parcours documenté et la cible visée</h2>
+  <p class="sub" data-i="ec.sub">Comparer objectivement le CV/parcours et l'objectif exprimé — pour ajuster la stratégie, jamais pour décourager. Toujours croisé avec la séance B.A.V.R.</p>
+
+  <div class="pill-note" style="border-left-color:var(--or);background:#FBF6E7" data-i="ec.note">Repère clinique : viser haut n'est jamais le problème — c'est un moteur. Le rôle de l'intervenant·e est de nommer l'écart avec les faits du marché, sans jamais le confondre avec la valeur de la personne. Reformuler un objectif est une stratégie, pas un renoncement (manuel, section 02).</div>
+
+  <div class="card">
+    <h3 data-i="ec.cible">Cible exprimée par la personne</h3>
+    <div class="grid2">
+      <div><label class="f" data-i="ec.poste">Poste / secteur visé</label><input type="text" id="e1" oninput="save()"></div>
+      <div><label class="f" data-i="ec.sal">Salaire / niveau attendu</label><input type="text" id="e2" oninput="save()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 data-i="ec.upload">Téléverser le CV du client</h3>
+    <p class="hint" data-i="ec.uploadHint">PDF, Word (.docx) ou texte — l'extraction se fait entièrement dans ce navigateur; le fichier n'est jamais envoyé sur un serveur.</p>
+    <input type="file" id="cvFile" accept=".pdf,.docx,.txt" onchange="handleCV(event)" style="margin:6px 0">
+    <div id="cvStatus" class="hint"></div>
+    <label class="f hidden" id="cvTextLabel" data-i="ec.extracted">Texte extrait du CV (relisez et corrigez au besoin)</label>
+    <textarea id="cvText" class="hidden" oninput="save()" style="min-height:170px;font-size:12.5px"></textarea>
+    <button class="btn sec hidden" id="cvAnalyzeBtn" onclick="renderCVAnalysis()" style="margin-top:10px" data-i="cv.analyzeBtn">Analyser le texte du CV (lecture technique + pistes de réflexion)</button>
+    <div id="cvAnalysisBox" class="hidden" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <h3 data-i="clin.h">Analyse clinique PAPPE — brouillon à valider</h3>
+    <div class="pill-note" data-i="clin.note"><b>Comment ça marche :</b> le bouton génère des propositions à partir du texte du CV, par détection locale de mots-clés, entièrement dans ce navigateur (ce n'est pas une IA générative — rien n'est envoyé nulle part). Ces brouillons sont un point de départ : relisez, modifiez, supprimez. Vous restez l'auteur·e clinique de chaque ligne.</div>
+    <button class="btn sec" onclick="genClinical()" data-i="clin.btn">Générer les brouillons à partir du CV</button>
+    <label class="f" data-i="clin.f">Forces observées du parcours (une par ligne)</label>
+    <textarea id="clinF" oninput="save()"></textarea>
+    <label class="f" data-i="clin.c">Compétences transférables (une par ligne)</label>
+    <textarea id="clinC" oninput="save()"></textarea>
+    <label class="f" data-i="clin.x">Éléments à explorer avec la personne (une par ligne — jamais des « faiblesses »)</label>
+    <textarea id="clinX" oninput="save()"></textarea>
+    <label class="f" data-i="clin.q">Questions suggérées pour préparer l'entretien (usage interne — non exportées vers le CRM)</label>
+    <textarea id="clinQ" oninput="save()"></textarea>
+    <label class="f" data-i="clin.p">Pistes d'accompagnement (une par ligne — CV, entrevue, orientation, formation…)</label>
+    <textarea id="clinP" oninput="save()"></textarea>
+  </div>
+
+  <div class="card">
+    <h3 data-i="ec.parc">Parcours documenté (CV)</h3>
+    <div class="grid2">
+      <div><label class="f" data-i="ec.exp">Années d'expérience déclarées</label><input type="text" id="e3" oninput="save()"></div>
+      <div><label class="f" data-i="ec.dip">Diplôme le plus élevé</label><input type="text" id="e4" oninput="save()"></div>
+    </div>
+    <label class="f" data-i="ec.reco">Statut de reconnaissance canadienne</label>
+    <div class="chk"><input type="radio" name="reco" value="reconnu" onchange="save()"><span data-i="ec.r1">Reconnu / équivalence obtenue</span></div>
+    <div class="chk"><input type="radio" name="reco" value="cours" onchange="save()"><span data-i="ec.r2">Processus de reconnaissance en cours</span></div>
+    <div class="chk"><input type="radio" name="reco" value="non" onchange="save()"><span data-i="ec.r3">Non entamé / non reconnu</span></div>
+    <label class="f" data-i="ec.cvnotes">Notes sur le CV (contenu, structure, présentation)</label>
+    <textarea id="e5" oninput="save()"></textarea>
+  </div>
+
+  <div class="card">
+    <h3 data-i="ec.fact">Facteurs pouvant expliquer l'écart</h3>
+    <div id="gapList"></div>
+    <div class="pill-note" data-i="ec.age"><b data-i="ec.ageb">Sur le facteur âge :</b> l'âge peut être un obstacle réel et documenté (âgisme à l'embauche, perception de « surqualification » ou de rigidité) — ce n'est pas qu'une perception à corriger. Il peut aussi devenir, pour certaines personnes, un récit qui amplifie d'autres barrières. Traiter avec la même nuance B.A.V.R. : reconnaître le réel du marché ET explorer ce qui reste modifiable (réseau, positionnement, secteurs plus ouverts).</div>
+  </div>
+
+  <div class="card">
+    <h3 data-i="ec.plan">Ajustement de cible — plan à 3 niveaux (PAPPE 06.6)</h3>
+    <div class="grid2">
+      <div><label class="f" data-i="ec.n1">Niveau 1 — Rôle d'entrée (postuler maintenant)</label><textarea id="e6" oninput="save()"></textarea></div>
+      <div><label class="f" data-i="ec.n2">Niveau 2 — Rôle intermédiaire (6-18 mois)</label><textarea id="e7" oninput="save()"></textarea></div>
+    </div>
+    <label class="f" data-i="ec.n3">Niveau 3 — Rôle cible (horizon 2-3 ans)</label>
+    <textarea id="e8" oninput="save()"></textarea>
+    <label class="f" data-i="ec.synth">Synthèse de l'écart et recommandation</label>
+    <textarea id="e9" oninput="save()"></textarea>
+  </div>
+</section>
+
+<!-- ============ 5. WSIB ============ -->
+<section class="panel hidden" id="p-wsib">
+  <h2 class="serif" data-i="ws.h">Module WSIB — Préparation psychosociale au retour au travail</h2>
+  <p class="sub" data-i="ws.sub">UCBH ne gère pas le dossier de retour au travail — nous préparons la personne à le réussir et à le maintenir. Complément, jamais remplacement.</p>
+
+  <div class="card">
+    <h3 data-i="ws.dossier">Dossier WSIB</h3>
+    <div class="grid2">
+      <div><label class="f" data-i="ws.date">Date de l'accident / blessure</label><input type="date" id="w1" oninput="save()"></div>
+      <div><label class="f" data-i="ws.statut">Statut du dossier</label>
+        <select id="w2" onchange="save()" style="width:100%;padding:9px;border:1px solid var(--ligne);border-radius:6px">
+          <option value="">—</option>
+          <option value="actif" data-i-opt="ws.s1">Actif — traitement en cours</option>
+          <option value="rtw" data-i-opt="ws.s2">Retour au travail en cours</option>
+          <option value="ferme" data-i-opt="ws.s3">Dossier fermé</option>
+        </select>
+      </div>
+    </div>
+    <label class="f" data-i="ws.restr">Limitations fonctionnelles documentées (par l'équipe médicale — non évaluées ici)</label>
+    <textarea id="w3" oninput="save()"></textarea>
+  </div>
+
+  <div class="card">
+    <h3 data-i="ws.avant">Avant — Préparer la personne</h3>
+    <div id="wsAvant"></div>
+    <label class="f" data-i="ws.avantN">Notes</label><textarea id="w4" oninput="save()"></textarea>
+  </div>
+  <div class="card">
+    <h3 data-i="ws.pendant">Pendant — Maintenir l'engagement</h3>
+    <div id="wsPendant"></div>
+    <label class="f" data-i="ws.pendantN">Notes</label><textarea id="w5" oninput="save()"></textarea>
+  </div>
+  <div class="card">
+    <h3 data-i="ws.apres">Après — Protéger le résultat</h3>
+    <div id="wsApres"></div>
+    <label class="f" data-i="ws.apresN">Notes (maintien en emploi, prévention des rechutes)</label><textarea id="w6" oninput="save()"></textarea>
+  </div>
+
+  <div class="card">
+    <h3 data-i="ws.coord">Coordination</h3>
+    <label class="f" data-i="ws.coordN">Autres intervenants impliqués (gestionnaire de cas WSIB, fournisseurs de soins, employeur)</label>
+    <textarea id="w7" oninput="save()"></textarea>
+    <label class="f" data-i="ws.next">Prochaine étape convenue</label>
+    <input type="text" id="w8" oninput="save()">
+  </div>
+</section>
+
+<!-- ============ 6. RAPPORT ============ -->
+<section class="panel hidden" id="p-rapport">
+  <h2 class="serif" data-i="rp.h">Rapport de séance</h2>
+  <p class="sub" data-i="rp.sub">Synthèse imprimable pour le dossier. Vérifiez, puis imprimez ou enregistrez en PDF.</p>
+  <div class="toolbar">
+    <button class="btn" onclick="buildReport();window.print()" data-i="rp.print">Imprimer / PDF</button>
+    <button class="btn sec" onclick="buildReport()" data-i="rp.refresh">Actualiser</button>
+    <button class="btn sec" onclick="exportToCRM()" data-i="rp.crm">Exporter vers le CRM UCBH (.json)</button>
+  </div>
+  <div class="pill-note" data-i="rp.crmnote">Le fichier « Exporter vers le CRM » contient uniquement l'information validée : date, intervenant·e, forces, compétences transférables, éléments à explorer, pistes et orientation SILFA le cas échéant. Le CV complet, vos notes de séance, vos hypothèses et vos questions d'entretien ne quittent jamais BAVR Studio.</div>
+  <div id="report"></div>
+</section>
+
+</main>
+
+<footer class="app">B.A.V.R. Studio · Méthode B.A.V.R. et cadre PAPPE développés par Nelly Folefack, MSW, RSW — UCBH · ucbh-london.ca · Usage professionnel sous licence</footer>
+
+<script>
+/* ================== CONFIG ================== */
+const ACCESS_CODES = ["UCBH-PRO-2026"];           // codes de licence — à modifier par organisme
+const KEY = "bavr-studio-v1";
+const SILFA_URL = "https://francovie-silfaucbh.netlify.app/";  // FrancoVie — porte d'entrée du parcours SILFA (LEARN/PRACTICE/LIVE se choisissent avec l'intervenant SILFA)
+
+function markSilfa(vol){
+  const cur = document.getElementById("silfaRec").value;
+  const list = cur ? cur.split(", ").filter(Boolean) : [];
+  if(!list.includes(vol)) list.push(vol);
+  document.getElementById("silfaRec").value = list.join(", ");
+  save();
+}
+
+/* ================== I18N ================== */
+let lang = "fr";
+const T = {
+ fr:{}, // le HTML est déjà en français
+ en:{
+  "gate.sub":"PAPPE clinical tool — for trained professionals. Enter your access code.",
+  "gate.btn":"Enter","hd.tag":"· From external locus to functional internal locus","hd.new":"New file",
+  "proto.banner":"⚠ PROTOTYPE — do not enter personal or identifiable health information. Authentication, encryption, and access logging are not yet implemented.",
+  "tab.g":"Guide","tab.d":"1 · Client file","tab.p":"2 · PAPPE assessment","tab.b":"3 · B.A.V.R. session","tab.r":"6 · Report",
+  "g.h":"How B.A.V.R. Studio works","g.sub":"A tool that guides your clinical process — without ever thinking in your place.",
+  "g.principe":"<b>Core principle:</b> this tool produces no diagnosis and offers no automatic interpretation. The lists, questions and phrasings come from the UCBH clinical manual — they support your professional judgment. <b>Everything recorded comes from you</b>, the practitioner: your observations, your hypotheses, your words. You remain solely clinically responsible for the file.",
+  "g.transversal":"<b>Cross-cutting development principle:</b> every new feature in this tool must answer one question — \u201CHow does this help the practitioner better understand the person and better structure their clinical reasoning?\u201D If a feature doesn't answer that question, it doesn't belong here.",
+  "g.parcours":"The 6-module clinical pathway",
+  "g.s1":"<b>1 · Client file</b> — You open the session: anonymized client code, date, context and initial request. No data leaves your browser — nothing is transmitted to UCBH or anyone.",
+  "g.s2":"<b>2 · PAPPE assessment</b> — Before intervening, you observe. The checklist (from PAPPE 06.1) helps you spot signs in narrative and posture: you check <i>what you observe</i>, not what the tool guesses. The exploration questions are prompts to ask in session. You then situate your reading of the locus of control — external, mixed or internal.",
+  "g.s3":"<b>3 · B.A.V.R. session</b> — The heart of the tool: the Barrier → Analysis → Validation → Reorientation rail structures the live session. At each step, anchors from the manual (examples, functions, phrasings) can be clicked to add to your notes — a time-saver, never a substitute. <b>The golden rule: V before R</b> — never reorient a person who hasn't felt received.",
+  "g.s4":"<b>4 · Path-target gap</b> — You can upload the CV (PDF, Word or text): the text is extracted <b>entirely in this browser</b>, nothing is sent anywhere. You review, correct as needed, then compare the background to the target yourself — the tool never judges a CV.",
+  "g.s5":"<b>5 · WSIB Module</b> — For return-to-work files: a Before / During / After structure to prepare and support the person, alongside the file managed by WSIB.",
+  "g.s6":"<b>6 · Report</b> — The tool assembles your notes into a printable professional summary (PDF) for the file. Always review before printing: the report reflects your words and carries your clinical signature.",
+  "g.bavrh":"The purpose of each B.A.V.R. step",
+  "g.b":"<b style='color:var(--b)'>B — Barrier (listen on three levels).</b> Gather what the person <i>says</i> (declared), what they <i>think without saying</i> (implicit) and what they <i>feel</i> (emotional). The emotional level is what blocks action — spotting it is already intervening.",
+  "g.a":"<b style='color:var(--a)'>A — Analysis (understand the function).</b> Ask: <i>what is the barrier doing for the person?</i> Protection, narrative, migration, relationship. You check the functions you judge active and write <b>your clinical hypotheses</b> — your professional reasoning; the tool only offers the manual's framework to structure it. Understanding the function = understanding how to intervene.",
+  "g.v":"<b style='color:var(--v)'>V — Validation (receive before reorienting).</b> Tell the person: \u201Cyou have been heard.\u201D Without this step, reorientation comes too soon and the person closes off — even if the strategy is right. Key nuance: validating the experience ≠ validating the rigid belief.",
+  "g.r":"<b style='color:var(--r)'>R — Reorientation (shift the locus).</b> Turn the barrier into realistic, measurable, immediate action — cognitive (open a crack), strategic (the first small step), identity-based (reconnect to strengths). Reorientation is not advice: it is a shift from a rigid external locus to a functional internal locus, without confrontation or rupture of alliance.",
+  "g.ethh":"Confidentiality and ethics",
+  "g.e1":"Always use a <b>client code</b> (initials, file number) — never the full name.",
+  "g.e2":"Data stays <b>in this browser only</b> (local storage). On a shared workstation, close the session with \u201CNew file\u201D after printing the report.",
+  "g.e3":"This tool is reserved for <b>professionals trained</b> in the B.A.V.R. method (UCBH licence). It complements your training — it does not replace it.",
+  "g.start":"Start a session →",
+  "tab.e":"4 · Path-Target Gap","tab.w":"5 · WSIB",
+  "d.crm":"UCBH CRM client ID (optional — enables the bridge to the CRM without naming the person here)",
+  "clin.h":"PAPPE clinical analysis — draft to validate",
+  "clin.note":"<b>How it works:</b> the button generates suggestions from the CV text, through local keyword detection, entirely in this browser (this is not generative AI — nothing is sent anywhere). These drafts are a starting point: review, edit, delete. You remain the clinical author of every line.",
+  "clin.btn":"Generate drafts from the CV",
+  "clin.f":"Observed strengths of the background (one per line)",
+  "clin.c":"Transferable skills (one per line)",
+  "clin.x":"Elements to explore with the person (one per line — never \u201cweaknesses\u201d)",
+  "clin.q":"Suggested questions to prepare the interview (internal use — not exported to the CRM)",
+  "clin.p":"Support avenues (one per line — CV, interview, referral, training…)",
+  "rp.crm":"Export to UCBH CRM (.json)",
+  "rp.crmnote":"The \u201cExport to CRM\u201d file contains only validated information: date, practitioner, strengths, transferable skills, elements to explore, avenues and SILFA referral if any. The full CV, your session notes, your hypotheses and your interview questions never leave BAVR Studio.",
+  "ec.h":"Gap between documented path and target sought","ec.sub":"Objectively compare the CV/background and the stated goal — to adjust strategy, never to discourage. Always cross-referenced with the B.A.V.R. session.",
+  "ec.note":"Clinical anchor: aiming high is never the problem — it's a driver. The practitioner's role is to name the gap using market facts, without ever confusing it with the person's worth. Reframing a goal is a strategy, not a surrender (manual, section 02).",
+  "ec.upload":"Upload the client's CV","ec.uploadHint":"PDF, Word (.docx) or text — extraction happens entirely in this browser; the file is never sent to a server.",
+  "ec.extracted":"Text extracted from the CV (review and correct as needed)",
+  "cv.analyzeBtn":"Analyze the CV text (technical reading + reflection prompts)",
+  "ec.cible":"Goal expressed by the person","ec.poste":"Target role / sector","ec.sal":"Expected salary / level",
+  "ec.parc":"Documented background (CV)","ec.exp":"Declared years of experience","ec.dip":"Highest credential",
+  "ec.reco":"Canadian recognition status","ec.r1":"Recognized / equivalence obtained","ec.r2":"Recognition process underway","ec.r3":"Not started / not recognized",
+  "ec.cvnotes":"Notes on the CV (content, structure, presentation)",
+  "ec.fact":"Factors that may explain the gap",
+  "ec.age":"On the age factor:","ec.ageb":"On the age factor:",
+  "ec.plan":"Target adjustment — 3-level plan (PAPPE 06.6)","ec.n1":"Level 1 — Entry role (apply now)","ec.n2":"Level 2 — Intermediate role (6-18 months)",
+  "ec.n3":"Level 3 — Target role (2-3 year horizon)","ec.synth":"Gap summary and recommendation",
+  "ws.h":"WSIB Module — Psychosocial preparation for return to work","ws.sub":"UCBH does not manage the return-to-work file — we prepare the person to succeed in it and sustain it. Complement, never replacement.",
+  "ws.dossier":"WSIB file","ws.date":"Date of injury","ws.statut":"File status",
+  "ws.s1":"Active — treatment ongoing","ws.s2":"Return to work in progress","ws.s3":"File closed",
+  "ws.restr":"Documented functional limitations (from the medical team — not assessed here)",
+  "ws.avant":"Before — Prepare the person","ws.avantN":"Notes",
+  "ws.pendant":"During — Sustain engagement","ws.pendantN":"Notes",
+  "ws.apres":"After — Protect the outcome","ws.apresN":"Notes (job retention, relapse prevention)",
+  "ws.coord":"Coordination","ws.coordN":"Other parties involved (WSIB case manager, health providers, employer)","ws.next":"Next step agreed",
+  "pp.h":"PAPPE","pp.def":"Process for the Analysis of the Person, their Adaptation, Path, Project and Employability — a clinical framework for understanding, simultaneously, the person, their journey, their potential, their obstacles and their professional project, in order to build a personalized support plan. PAPPE does not label the person — it prepares the clinical reasoning that leads into the B.A.V.R. session.",
+  "pp.goalh":"By the end of PAPPE, you should be able to answer:",
+  "pp.goal1":"Who is this person — beyond the initial request?","pp.goal2":"Where is the rupture, and since when?",
+  "pp.goal3":"What are their real resources and strengths?","pp.goal4":"What does their goal represent — not just which job, but why?",
+  "pp.goal5":"What is the gap between their project and their current situation, and is it something that can shift?",
+  "pp.axP":"Person","pp.axPsub":"Understand the person before their problem. Who is consulting, and why now?",
+  "pp.axA":"Adaptation","pp.axAsub":"The rupture: what broke, and the psychosocial, cultural or systemic obstacles encountered.",
+  "pp.grid":"Observation checklist","pp.qh":"Exploration questions","pp.notes":"Exploration notes",
+  "pp.locus":"Reading the locus of control (Rotter, 1954)",
+  "pp.le":"<b>Dominant external locus</b> — \u201CIt is not in my hands\u201D: market, accent, credentials, discrimination. Likely protective function.",
+  "pp.lm":"<b>Mixed / shifting</b> — recognizes a margin of action at times.",
+  "pp.li":"<b>Functional internal locus</b> — \u201CThere are things I can influence.\u201D",
+  "pp.trap":"Clinical trap: validate too much = reinforces the pattern · confront too early = loss of alliance. The goal is not a total internal locus — it is a functional balance.",
+  "pp.axP2":"Path (resources and strengths)","pp.axP2sub":"Never start from what's missing. Draw out resources before obstacles.",
+  "pp.axProj":"Project (the goal, and its meaning)","pp.axProjsub":"Not just which job — why that one, and what it represents.",
+  "pp.axE":"Employability (the gap)","pp.axEsub":"The CV and the market come last — never first. Continue the analysis in the next tab.",
+  "pp.axEbtn":"Continue to Path-Target Gap →",
+  "a.reflect":"Before continuing — are you certain this is the real barrier? What, in what the person said, supports this hypothesis? Is there another possible explanation?",
+  "r.reflect":"Does the person leave with a realistic action — not a miracle solution, a first step? Is the agreed step measurable and dated?",
+  "cs.h":"Illustrative case (anonymized) — from PAPPE reasoning to B.A.V.R. reorientation",
+  "cs.sub":"A real exchange, summarized and anonymized, showing how PAPPE prepares the B.A.V.R. session. No identifying details are kept.",
+  "cs.ctx":"Context:","cs.ctxv":"M., trained as an electrician abroad, a Francophone immigrant. Initial request: find work in his field.",
+  "cs.pappeh":"PAPPE — what the interview revealed",
+  "cs.p1":"<b>Person:</b> concrete background as an electrician; immigration process underway; family remained in the home country.",
+  "cs.p2":"<b>Adaptation:</b> credential not directly recognized; a French-language equivalency pathway exists, but with roughly a two-year wait; the current profile has never actually been tested with employers; a health factor (vision) surfaces during the conversation, with a safety implication for electrical work.",
+  "cs.p3":"<b>Path (resources):</b> concrete trade experience, strong motivation, an active community network, openness to related paths.",
+  "cs.p4":"<b>Project:</b> regain stable employment and recognition of his skill; an interest in one day building his own business.",
+  "cs.p5":"<b>Employability (gap):</b> no application yet tested with the current profile; short-training and adjacent entrepreneurial paths remain to be explored.",
+  "cs.bavrh":"B.A.V.R. — how PAPPE prepared the session",
+  "cs.bb":"B —","cs.bv":"Declared: \u201CMy diploma isn't recognized here.\u201D Implicit: the belief that nothing is possible before full recognition. Emotional: fear of failing by applying \u201Ctoo soon,\u201D and real migration fatigue.",
+  "cs.ab":"A —","cs.av":"Waiting for full recognition protects against an immediate rejection — a legitimate protective function. The two-year institutional wait is real, not imagined: it feeds an understandable sense of helplessness. The vision-related constraint adds to this and deserves to be named — neither minimized nor dramatized.",
+  "cs.vb":"V —","cs.vv":"Acknowledging that the two-year wait is a real obstacle. Acknowledging that costs (glasses, training) are a concrete, legitimate constraint to name — not a minor detail.",
+  "cs.rb":"R —","cs.rv":"Cognitive: \u201CThe full credential isn't necessarily required for a first step — what could be attempted right now, with what you already have?\u201D Strategic: test 2-3 applications with the current profile, explore a short certification in parallel, examine a related path with entrepreneurial potential. Identity: the experience already gained is valued as a transferable asset — not an invalid diploma. First step agreed: the person shares their CV; the practitioner identifies relevant postings and returns with concrete training leads (duration, cost) at the next appointment.",
+  "cs.note":"What this case illustrates: the barrier worth exploring further didn't seem to be only credential recognition — the belief that one had to wait two years before acting also played a significant role. PAPPE made it possible to see the resources and the project BEFORE dwelling on the gap; B.A.V.R. turned this provisional understanding into a realistic first step, this week, without waiting.",
+  "silfa.trigA":"If the language barrier dominates (\u201CI can't speak at work,\u201D \u201CI'm stuck in French\u201D):",
+  "silfa.check":"Verify before considering: is the difficulty really about language, or more about confidence, anxiety, specialized vocabulary? Which language does the person want to work in? What is their current functional level? Do they already have access to a funded program? Is SILFA financially accessible for them? Have they agreed to this direction?",
+  "silfa.btnP":"→ Consider SILFA · PRACTICE (confidence and communication)",
+  "silfa.trigL":"If there's no Canadian experience, volunteering, or network:",
+  "silfa.btnL":"→ Consider SILFA · LIVE (immersion, volunteering, networking — A2+ level required)",
+  "silfa.trigLe":"If the goal targets the TEF, studies, or a qualified position:",
+  "silfa.btnLe":"→ Consider SILFA · LEARN (self-paced prep, TEF, FrancoVie)",
+  "silfa.trigR":"If the barrier is \u201CI don't speak well enough,\u201D \u201CI don't understand interviews\u201D:",
+  "silfa.short.le":"SILFA LEARN","silfa.short.pr":"SILFA PRACTICE","silfa.short.li":"SILFA LIVE",
+  "silfa.recap":"SILFA recommendations activated during the session",
+  "silfa.guideh":"About SILFA — UCBH's language pathway",
+  "silfa.guidebody":"SILFA is a personalized language-learning pathway with three services the participant can combine based on their needs: <b>LEARN</b> (self-paced learning via FrancoVie — exercises, TEF prep, ~$49/month), <b>PRACTICE</b> (weekly individual coaching + small-group conversation — ~$149/month), and <b>LIVE</b> (real-world immersion: volunteering, networking, community activities — A2+ level required, ~$249/month). PAPPE identifies the need; SILFA responds to it. Clicking a recommendation button opens FrancoVie in a new tab — no client data is transmitted.",
+  "int.why":"Why","int.obs":"Observe","int.leads":"Leads","int.end":"By the end",
+  "int.P.why":"Understand who is consulting, before focusing on the problem.",
+  "int.P.obs":"The tone of the narrative, what comes up first, the perceived urgency.",
+  "int.P.leads":"Is this a voluntary step or a referral? What has changed recently?",
+  "int.P.end":"I know the life context and what brings the person here today.",
+  "int.A.why":"Locate the rupture, between real and perceived obstacles.",
+  "int.A.obs":"The narrative (checklist below), the locus of control, cultural and linguistic elements.",
+  "int.A.leads":"Is the named barrier the only one? What hasn't been said yet?",
+  "int.A.end":"I know where the rupture lies, and which locus dominates.",
+  "int.R.why":"Draw out real resources and strengths, before naming what's missing.",
+  "int.R.obs":"Past successes, natural skills, existing network.",
+  "int.R.leads":"What strengths does the person themselves minimize?",
+  "int.R.end":"I have a concrete list of mobilizable resources.",
+  "int.Proj.why":"Understand the meaning of the project, not just the job title.",
+  "int.Proj.obs":"What truly motivates the choice: security, interest, necessity, or influence from those around them.",
+  "int.Proj.leads":"Does the choice seem driven by fear of not finding work, rather than genuine interest? Have other options been considered?",
+  "int.Proj.end":"I understand why this project, and I can name what truly motivates it.",
+  "int.F.why":"Verify that the planned training truly serves the project — not just that it exists.",
+  "int.F.end":"I can say whether the training is coherent with the project and the market, or deserves to be questioned.",
+  "int.E.why":"Measure the gap between the project and the market reality — last, never first.",
+  "int.E.leads":"Is the gap real or perceived? Can it shift in the short term?",
+  "int.E.end":"I can name a realistic first step toward the goal.",
+  "int.B.why":"Listen on three levels before acting.","int.B.obs":"The exact words (declared), the undertones (implicit), the emotion (affective).",
+  "int.B.leads":"What version does the person repeat most often?","int.B.end":"I have a provisional understanding of the barrier, at all three levels, to verify with the person.",
+  "int.Av.why":"Understand why this barrier exists.","int.Av.obs":"What function it protects for the person.","int.Av.end":"I understand the function of the barrier.",
+  "int.V.why":"Receive before reorienting.","int.V.obs":"Does the person genuinely feel heard?","int.V.leads":"Am I validating the experience, or the rigid belief?","int.V.end":"The person feels understood.",
+  "int.Re.why":"Shift the locus, not give advice.","int.Re.obs":"The person's readiness for a first concrete step.","int.Re.leads":"What is the smallest realistic step, this week?","int.Re.end":"The person leaves with a concrete, dated step.",
+  "proj.motL":"What seems to motivate this choice (check all that apply)",
+  "proj.mot1":"Genuine interest in the field","proj.mot2":"Search for security (stability, predictable income)",
+  "proj.mot3":"Necessity (financial urgency, status, deadline)","proj.mot4":"Fear of not finding anything else",
+  "proj.mot5":"Influence from family or entourage","proj.autresL":"Other options considered or mentioned",
+  "form.h":"Planned training","form.f1":"Desired training","form.f2":"Duration","form.f3":"Reasons for this choice",
+  "form.f4":"Goals sought through this training","form.f5":"Other training options considered","form.f6":"Financial constraints",
+  "form.coh1":"Coherent with the professional project","form.coh2":"Coherent with the local labour market",
+  "port.h":"Provisional PAPPE Portrait","port.sub":"A synthesis you fill in yourself from the five axes — not an automatically generated summary. It prepares the transition to B.A.V.R. without having to mentally reconstruct the whole analysis.",
+  "port.demande":"Expressed request (what the person officially asks for)",
+  "port.besoin":"Need to explore further (what seems to deserve deeper exploration — without asserting it's the \u201Creal\u201D need)",
+  "port.ress":"Identified resources","port.barr":"Observed barriers (real, perceived, or still undetermined)",
+  "port.pistes":"Exploration leads (hypotheses to verify — not conclusions)",
+  "port.prio":"Immediate priority (what must be addressed before the employment project, if applicable)",
+  "port.transfert":"Elements to carry into B.A.V.R. (the barrier(s) that warrant a B.A.V.R. intervention)",
+  "port.gobavr":"Move to the B.A.V.R. session →",
+  "link.h":"Links to explore","link.sub":"Spots themes that recur in several places across what you've entered (Person, Adaptation, Path, Project, Training, CV). The tool only formulates questions or observations — never conclusions.",
+  "link.btn":"Search for links between the information entered",
+  "d.h":"Client file","d.sub":"Identify the person by a code — nothing is transmitted: everything stays in this browser.",
+  "d.code":"Client code (initials or number)","d.date":"Session date","d.ctx":"Context and initial request",
+  "d.ctx.ph":"Migration journey, employment situation, expressed request…","d.int":"Practitioner",
+  "d.note":"Clinical anchor: \u201CAcknowledge what is real AND open what can be changed.\u201D — UCBH Manual, section 01",
+  "pp.h_OLD_REMOVED":"",
+  "pp.grid":"Observation checklist","pp.qh":"Exploration questions","pp.notes":"Exploration notes",
+  "pp.locus":"Reading the locus of control (Rotter, 1954)",
+  "pp.le":"<b>Dominant external locus</b> — \u201CIt is not in my hands\u201D: market, accent, credentials, discrimination. Likely protective function.",
+  "pp.lm":"<b>Mixed / shifting</b> — recognizes a margin of action at times.",
+  "pp.li":"<b>Functional internal locus</b> — \u201CThere are things I can influence.\u201D",
+  "pp.trap":"Clinical trap: validate too much = reinforces the pattern · confront too early = loss of alliance. The goal is not a total internal locus — it is a functional balance.",
+  "bv.h":"Guided B.A.V.R. session","bv.sub":"Barrier → Analysis → Validation → Reorientation. Move at the person's pace — V before R, always.",
+  "bv.b":"Barrier","bv.a":"Analysis","bv.v":"Validation","bv.r":"Reorientation",
+  "b.h":"B — The barrier, on three levels","b.def":"What the person says · believes · feels. The emotional level is what blocks action.",
+  "b.1":"1 · Declared barrier (verbal level — what they state)","b.2":"2 · Implicit barrier (cognitive level — what they think but do not say)",
+  "b.3":"3 · Emotional barrier (affective level — what they truly feel)",
+  "a.h":"A — Psychosocial analysis: what is the barrier doing for the person?","a.def":"Understanding the function = understanding how to intervene. Check active functions and note your hypotheses.",
+  "a.notes":"Your clinical hypotheses (your professional reasoning — the tool suggests nothing)","v.h":"V — Emotional validation: receive before reorienting",
+  "v.def":"Without validation, reorientation comes too soon and the person closes off. Validating the experience ≠ validating the rigid belief.",
+  "v.bank":"Key phrasings — click to add to your notes:","v.notes":"What was validated in session",
+  "r.h":"R — Reorientation: turning the barrier into action, without confrontation","r.def":"Reorientation is not advice. It is a shift of the locus.",
+  "r.cog":"Cognitive reorientation — the crack opened","r.strat":"Strategic reorientation — the realistic, measurable, immediate action",
+  "r.who":"First small step agreed","r.when":"Deadline / next appointment","r.id":"Identity reorientation — strengths and achievements reconnected",
+  "nav.a":"Go to Analysis →","nav.v":"Go to Validation →","nav.r":"Go to Reorientation →","nav.rep":"Generate report →",
+  "rp.h":"Session report","rp.sub":"Printable summary for the file. Review, then print or save as PDF.",
+  "rp.print":"Print / PDF","rp.refresh":"Refresh"
+ }
+};
+
+const DATA = {
+ obs:{fr:["Discours centré sur les obstacles externes","Comparaison constante avec le pays d'origine","Rigidité du projet professionnel","Fatigue migratoire / surcharge cognitive","Sur-justification, hésitation, posture basse","Difficulté à identifier sa part d'action","Perte de confiance / dévalorisation","Sentiment d'injustice / frustration","Attentes irréalistes du marché"],
+      en:["Narrative centered on external obstacles","Constant comparison with country of origin","Rigidity in career goals","Migration fatigue / cognitive overload","Over-justification, hesitation, low posture","Difficulty identifying one's own role","Loss of confidence / self-devaluation","Sense of injustice / frustration","Unrealistic market expectations"]},
+ expQ:{fr:["« Comment décririez-vous votre parcours depuis votre arrivée? »","« Qu'est-ce qui vous semble le plus difficile à comprendre ici? »","« Qu'est-ce qui vous donne l'impression d'être bloqué·e? »"],
+       en:["\u201CHow would you describe your journey since arriving?\u201D","\u201CWhat seems most difficult to understand here?\u201D","\u201CWhat gives you the feeling of being stuck?\u201D"]},
+ bDecl:{fr:["« C'est mon accent. »","« Mon diplôme n'est pas reconnu. »","« Les employeurs ne donnent pas de chance. »","« Ici, ils veulent des Canadiens. »"],
+        en:["\u201CIt is my accent.\u201D","\u201CMy diploma is not recognized.\u201D","\u201CEmployers do not give chances.\u201D","\u201CThey only want Canadians.\u201D"]},
+ bEmo:{fr:["Peur","Honte","Fatigue","Sentiment d'injustice","Perte de confiance","Confusion identitaire"],
+       en:["Fear","Shame","Fatigue","Sense of injustice","Loss of confidence","Identity confusion"]},
+ fn:{fr:[["Fonction protectrice","Protège contre la peur d'échouer, le deuil de statut, l'impuissance apprise."],
+         ["Fonction narrative","Donne un sens à l'échec : « Si ce n'est pas moi le problème, alors je ne suis pas en échec. »"],
+         ["Fonction migratoire","Rupture de repères, perte de réseau, fatigue migratoire chronique, expériences de discrimination."],
+         ["Fonction relationnelle","Demande de reconnaissance, test de l'alliance, manière de ne pas perdre la face."]],
+     en:[["Protective function","Protects against fear of failure, status grief, learned helplessness."],
+         ["Narrative function","Gives meaning to failure: \u201CIf it is not my fault, then I am not failing.\u201D"],
+         ["Migration function","Loss of reference points and network, chronic migration fatigue, experiences of discrimination."],
+         ["Relational function","Request for recognition, test of the alliance, a way to save face."]]},
+ vBank:{fr:["« Ce que vous vivez est réel et difficile. »","« Ça a du sens que vous vous sentiez ainsi. »","« Votre fatigue est légitime. »","« Je comprends pourquoi c'est difficile de faire confiance à ce processus. »"],
+        en:["\u201CWhat you are experiencing is real and difficult.\u201D","\u201CIt makes sense that you feel this way.\u201D","\u201CYour fatigue is legitimate.\u201D","\u201CI understand why it is hard to trust this process.\u201D"]},
+ rCog:{fr:["« Et dans tout ça, qu'est-ce qui dépend un peu de vous? »","« Quel serait un premier petit pas réaliste? »","« Est-ce que ça nous laisse de l'espace pour agir ensemble? »"],
+       en:["\u201CWhat part of this depends a little on you?\u201D","\u201CWhat could be a first small realistic step?\u201D","\u201CDoes that leave us space to act together?\u201D"]},
+ rStrat:{fr:["Pratiquer un pitch de 60 secondes","Mini-simulation d'entrevue enregistrée","Cibler un poste intermédiaire","Adapter le CV","Identifier 3 forces concrètes"],
+         en:["Practise a 60-second pitch","Recorded interview mini-simulation","Target an intermediate role","Adapt the CV","Identify 3 concrete strengths"]},
+ locus:{fr:{externe:"Locus externe dominant",mixte:"Locus mixte / en mouvement",interne:"Locus interne fonctionnel"},
+        en:{externe:"Dominant external locus",mixte:"Mixed / shifting locus",interne:"Functional internal locus"}},
+ gap:{fr:["Diplôme non reconnu au Canada","Absence d'expérience canadienne","Réseau professionnel limité","Barrière linguistique (français/anglais technique)","Écart technologique / logiciels","Âge perçu comme un obstacle par les employeurs (surqualification ou « trop d'expérience »)","Attentes salariales non alignées au marché local","Secteur réglementé (ordre professionnel à intégrer)","Interruption de carrière (migration, famille, santé)"],
+      en:["Credential not recognized in Canada","No Canadian experience","Limited professional network","Language barrier (technical French/English)","Technology / software gap","Age perceived as an obstacle by employers (overqualification or \u201Ctoo much experience\u201D)","Salary expectations not aligned with local market","Regulated sector (professional order to join)","Career interruption (migration, family, health)"]},
+ wsAvant:{fr:["Évaluation psychosociale initiale","Reconstruction de la confiance","Réduction des barrières identifiées","Deuil de l'identité professionnelle antérieure abordé"],
+          en:["Initial psychosocial assessment","Rebuilding confidence","Reduction of identified barriers","Grief of prior professional identity addressed"]},
+ wsPendant:{fr:["Soutien à travers les défis (rendez-vous, procédures)","Médiation culturelle et linguistique","Soutien à la famille si nécessaire","Maintien de la motivation et de l'engagement"],
+            en:["Support through challenges (appointments, procedures)","Cultural and linguistic mediation","Family support if needed","Maintaining motivation and engagement"]},
+ wsApres:{fr:["Maintien en emploi observé","Signes de risque de rechute identifiés","Réseau de soutien communautaire activé","Suivi post-fermeture planifié"],
+          en:["Job retention observed","Relapse risk signs identified","Community support network activated","Post-closure follow-up planned"]},
+ axP:{fr:["« Racontez-moi votre parcours. »","« Quel événement vous amène ici aujourd'hui? »","« Qu'est-ce qui est le plus difficile en ce moment? »"],
+      en:["\u201CTell me about your journey.\u201D","\u201CWhat brings you here today?\u201D","\u201CWhat feels most difficult right now?\u201D"]},
+ axRes:{fr:["« De quoi êtes-vous le plus fier·ère? »","« Quand vous réussissez quelque chose, qu'est-ce qui vous aide? »","« Quelles compétences utilisez-vous naturellement? »","« Qu'est-ce que les autres apprécient chez vous? »","« Quelle expérience vous a le plus fait grandir? »"],
+        en:["\u201CWhat are you most proud of?\u201D","\u201CWhen you succeed at something, what helps you get there?\u201D","\u201CWhat skills do you use naturally?\u201D","\u201CWhat do others appreciate about you?\u201D","\u201CWhich experience helped you grow the most?\u201D"]},
+ axProj:{fr:["« Pourquoi ce métier, précisément? »","« Que représente-t-il pour vous? »","« Que voulez-vous retrouver grâce à cet emploi? »","« Si tout allait bien dans deux ans, à quoi ressemblerait votre vie? »"],
+         en:["\u201CWhy this line of work, specifically?\u201D","\u201CWhat does it represent for you?\u201D","\u201CWhat do you want to regain through this job?\u201D","\u201CIf things went well over the next two years, what would your life look like?\u201D"]}
+};
+
+/* ================== PORTE ================== */
+function unlock(){
+  const v = document.getElementById("gateCode").value.trim();
+  if(ACCESS_CODES.includes(v)){ document.getElementById("gate").classList.add("hidden"); sessionStorage.setItem(KEY+"-auth","1"); }
+  else document.getElementById("gateErr").textContent = lang==="fr" ? "Code non reconnu. Contactez UCBH pour une licence." : "Code not recognized. Contact UCBH for a licence.";
+}
+document.getElementById("gateCode").addEventListener("keydown",e=>{if(e.key==="Enter")unlock();});
+if(sessionStorage.getItem(KEY+"-auth")==="1") document.getElementById("gate").classList.add("hidden");
+
+/* ================== NAV ================== */
+function go(id,btn){
+  document.querySelectorAll(".panel").forEach(p=>p.classList.add("hidden"));
+  document.getElementById("p-"+id).classList.remove("hidden");
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  if(id==="rapport") buildReport();
+}
+let curStep = 0;
+function stepGo(n){
+  curStep = n;
+  for(let i=0;i<4;i++){
+    document.getElementById("st"+i).classList.toggle("hidden", i!==n);
+    const rb = document.querySelectorAll("#rail button")[i];
+    rb.classList.toggle("on", i===n);
+    rb.classList.toggle("done", i<n);
+  }
+}
+
+/* ================== LISTES DYNAMIQUES ================== */
+function chips(id, arr, targetTextarea){
+  const el = document.getElementById(id); el.innerHTML="";
+  arr.forEach(t=>{
+    const b=document.createElement("button"); b.type="button"; b.textContent=t;
+    b.onclick=()=>{ if(targetTextarea){ const ta=document.getElementById(targetTextarea); ta.value += (ta.value?"\n":"")+t; save(); } };
+    el.appendChild(b);
+  });
+}
+function checklist(id, arr, name){
+  const el=document.getElementById(id); el.innerHTML="";
+  arr.forEach((t,i)=>{
+    const lab=document.createElement("label"); lab.className="chk";
+    const c=document.createElement("input"); c.type="checkbox"; c.dataset.k=name+i; c.onchange=save;
+    const s=document.createElement("span");
+    if(Array.isArray(t)) s.innerHTML="<b>"+t[0]+"</b> — "+t[1]; else s.textContent=t;
+    lab.append(c,s); el.appendChild(lab);
+  });
+}
+function renderLists(){
+  checklist("obsList", DATA.obs[lang], "obs");
+  chips("expQ", DATA.expQ[lang], "pNotes");
+  chips("bDecl", DATA.bDecl[lang], "b1");
+  chips("bEmo", DATA.bEmo[lang], "b3");
+  checklist("fnList", DATA.fn[lang], "fn");
+  chips("vBank", DATA.vBank[lang], "vNotes");
+  chips("rCog", DATA.rCog[lang], "r1");
+  chips("rStrat", DATA.rStrat[lang], "r2");
+  checklist("gapList", DATA.gap[lang], "gap");
+  checklist("wsAvant", DATA.wsAvant[lang], "wsav");
+  checklist("wsPendant", DATA.wsPendant[lang], "wspe");
+  checklist("wsApres", DATA.wsApres[lang], "wsap");
+  chips("axPq", DATA.axP[lang], "paPers");
+  chips("axResQ", DATA.axRes[lang], "paRes");
+  chips("axProjQ", DATA.axProj[lang], "paProj");
+  restoreChecks();
+}
+
+/* ================== SAUVEGARDE ================== */
+const FIELDS = ["cCode","cDate","cCtx","cInt","silfaRec","pNotes","paPers","paRes","paProj","projAutres","formNom","formDuree","formRaisons","formObj","formAutres","formFin",
+  "portDemande","portBesoin","portRess","portBarr","portPistes","portPrio","portTransfert",
+  "b1","b2","b3","aNotes","vNotes","r1","r2","r3","r4","r5",
+  "e1","e2","e3","e4","e5","e6","e7","e8","e9","cvText","w1","w2","w3","w4","w5","w6","w7","w8","cCRM","clinF","clinC","clinX","clinQ","clinP"];
+const SIMPLE_CHECKS = ["motInt","motSec","motNec","motPeur","motInfl","formCohProj","formCohMarche"];
+function save(){
+  const d = { f:{}, c:{}, locus:(document.querySelector("input[name=locus]:checked")||{}).value||"", reco:(document.querySelector("input[name=reco]:checked")||{}).value||"", sc:{} };
+  FIELDS.forEach(k=>d.f[k]=document.getElementById(k).value);
+  document.querySelectorAll("input[type=checkbox][data-k]").forEach(c=>d.c[c.dataset.k]=c.checked);
+  SIMPLE_CHECKS.forEach(id=>{ const el=document.getElementById(id); if(el) d.sc[id]=el.checked; });
+  localStorage.setItem(KEY, JSON.stringify(d));
+  const m=document.getElementById("savedMsg"); m.textContent = lang==="fr"?"✓ enregistré":"✓ saved";
+  clearTimeout(save._t); save._t=setTimeout(()=>m.textContent="",1500);
+}
+function load(){
+  const raw=localStorage.getItem(KEY); if(!raw) return;
+  try{
+    const d=JSON.parse(raw);
+    FIELDS.forEach(k=>{ if(d.f&&d.f[k]!=null) document.getElementById(k).value=d.f[k]; });
+    if(d.locus){ const r=document.querySelector('input[name=locus][value="'+d.locus+'"]'); if(r) r.checked=true; }
+    if(d.reco){ const r=document.querySelector('input[name=reco][value="'+d.reco+'"]'); if(r) r.checked=true; }
+    if(d.sc) SIMPLE_CHECKS.forEach(id=>{ const el=document.getElementById(id); if(el && d.sc[id]) el.checked=true; });
+    save._checks = d.c||{};
+  }catch(e){}
+}
+function restoreChecks(){
+  const c=save._checks||JSON.parse(localStorage.getItem(KEY)||"{}").c||{};
+  document.querySelectorAll("input[type=checkbox][data-k]").forEach(x=>{ if(c[x.dataset.k]) x.checked=true; });
+}
+function resetAll(){
+  const ok = confirm(lang==="fr"?"Effacer ce dossier et recommencer?":"Clear this file and start over?");
+  if(!ok) return;
+  localStorage.removeItem(KEY);
+  FIELDS.forEach(k=>document.getElementById(k).value="");
+  document.querySelectorAll("input[type=checkbox][data-k]").forEach(c=>c.checked=false);
+  document.querySelectorAll("input[name=locus]").forEach(r=>r.checked=false);
+  stepGo(0); buildReport();
+}
+
+/* ================== LANGUE ================== */
+function applyLang(){
+  document.querySelectorAll("[data-i]").forEach(el=>{
+    const k=el.dataset.i;
+    if(lang==="en" && T.en[k]) el.innerHTML=T.en[k];
+    else if(lang==="fr" && el.dataset.fr) el.innerHTML=el.dataset.fr;
+  });
+  document.querySelectorAll("[data-i-opt]").forEach(el=>{
+    const k=el.dataset.iOpt;
+    if(lang==="en" && T.en[k]) el.textContent=T.en[k];
+    else if(lang==="fr" && el.dataset.fr) el.textContent=el.dataset.fr;
+  });
+  document.getElementById("langBtn").textContent = lang==="fr"?"EN":"FR";
+  renderLists();
+}
+document.querySelectorAll("[data-i-opt]").forEach(el=>el.dataset.fr=el.textContent);
+// mémoriser le FR d'origine pour pouvoir y revenir
+document.querySelectorAll("[data-i]").forEach(el=>el.dataset.fr=el.innerHTML);
+function toggleLang(){ lang = lang==="fr"?"en":"fr"; applyLang(); }
+
+/* ================== RAPPORT ================== */
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function listChecked(prefix, arr){
+  const c=JSON.parse(localStorage.getItem(KEY)||"{}").c||{};
+  return arr.map((t,i)=>({t:Array.isArray(t)?t[0]:t,on:c[prefix+i]})).filter(x=>x.on).map(x=>x.t);
+}
+function buildReport(){
+  const g=id=>esc(document.getElementById(id).value);
+  const L = lang, F = (fr,en)=> L==="fr"?fr:en;
+  const locusVal=(document.querySelector("input[name=locus]:checked")||{}).value;
+  const recoVal=(document.querySelector("input[name=reco]:checked")||{}).value;
+  const recoLbl={reconnu:F("Reconnu / équivalence obtenue","Recognized / equivalence obtained"),cours:F("Processus en cours","Recognition process underway"),non:F("Non entamé / non reconnu","Not started / not recognized")};
+  const wsStatutLbl={actif:F("Actif — traitement en cours","Active — treatment ongoing"),rtw:F("Retour au travail en cours","Return to work in progress"),ferme:F("Dossier fermé","File closed")};
+  const obs=listChecked("obs",DATA.obs[L]); const fns=listChecked("fn",DATA.fn[L]);
+  const gaps=listChecked("gap",DATA.gap[L]);
+  const wsav=listChecked("wsav",DATA.wsAvant[L]); const wspe=listChecked("wspe",DATA.wsPendant[L]); const wsap=listChecked("wsap",DATA.wsApres[L]);
+  const ul=a=>a.length?("<ul>"+a.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>"):"<p class='empty'>"+F("— non documenté —","— not documented —")+"</p>";
+  const p=v=>v?("<p>"+v.replace(/\n/g,"<br>")+"</p>"):"<p class='empty'>"+F("— non documenté —","— not documented —")+"</p>";
+  document.getElementById("report").innerHTML = `
+    <div class="rp-head">
+      <div class="brand">UCBH · B.A.V.R. STUDIO</div>
+      <h2 class="serif">${F("Rapport de séance B.A.V.R.","B.A.V.R. Session Report")}</h2>
+      <p class="meta">${F("Client","Client")} : <b>${g("cCode")||"—"}</b> · ${F("Date","Date")} : ${g("cDate")||"—"} · ${F("Intervenant·e","Practitioner")} : ${g("cInt")||"—"}</p>
+    </div>
+    ${g("silfaRec")?`<div class="pill-note" style="background:var(--tint);border-left:3px solid var(--vert);padding:10px 14px;margin:10px 0"><b>${F("Intervention recommandée","Recommended intervention")} :</b> ${F("Programme SILFA (UCBH)","SILFA Program (UCBH)")} — ${F("service(s) suggéré(s)","suggested service(s)")} : <b>${esc(g("silfaRec"))}</b></div>`:""}
+    <h4>${F("Contexte et demande","Context and request")}</h4>${p(g("cCtx"))}
+    <h4>P — ${F("Personne","Person")}</h4>${p(g("paPers"))}
+    <h4>A — ${F("Adaptation — observations cliniques (PAPPE)","Adaptation — clinical observations (PAPPE)")}</h4>${ul(obs)}
+    ${locusVal?`<p><b>${F("Lecture du locus","Locus reading")} :</b> ${DATA.locus[L][locusVal]}</p>`:""}
+    ${g("pNotes")?`<p>${p(g("pNotes"))}</p>`:""}
+    <h4>P — ${F("Parcours (ressources et forces)","Path (resources and strengths)")}</h4>${p(g("paRes"))}
+    <h4>P — ${F("Projet","Project")}</h4>${p(g("paProj"))}
+    ${(document.getElementById("motInt").checked||document.getElementById("motSec").checked||document.getElementById("motNec").checked||document.getElementById("motPeur").checked||document.getElementById("motInfl").checked)?`<p><b>${F("Motivations identifiées","Identified motivations")} :</b> ${["motInt","motSec","motNec","motPeur","motInfl"].filter(id=>document.getElementById(id).checked).map(id=>({motInt:F("Intérêt réel","Genuine interest"),motSec:F("Sécurité","Security"),motNec:F("Nécessité","Necessity"),motPeur:F("Peur de ne pas trouver","Fear of not finding"),motInfl:F("Influence de l'entourage","Family influence")}[id])).join(", ")}</p>`:""}
+    ${g("projAutres")?p(g("projAutres")):""}
+    ${(g("formNom")||g("formRaisons")||g("formObj"))?`<h4>${F("Formation envisagée","Planned training")}</h4><p><b>${g("formNom")||"—"}</b> ${g("formDuree")?(" · "+g("formDuree")):""}</p>${g("formRaisons")?p(g("formRaisons")):""}${g("formObj")?p(g("formObj")):""}`:""}
+    ${(g("portDemande")||g("portBesoin")||g("portRess")||g("portBarr")||g("portPistes")||g("portPrio")||g("portTransfert"))?`
+    <h4 style="background:#FBF6E7;padding:4px 8px;border-radius:4px">${F("Portrait PAPPE provisoire","Provisional PAPPE Portrait")}</h4>
+    <p><b>${F("Demande exprimée","Expressed request")} :</b></p>${p(g("portDemande"))}
+    <p><b>${F("Besoin à approfondir","Need to explore further")} :</b></p>${p(g("portBesoin"))}
+    <p><b>${F("Ressources identifiées","Identified resources")} :</b></p>${p(g("portRess"))}
+    <p><b>${F("Barrières observées","Observed barriers")} :</b></p>${p(g("portBarr"))}
+    <p><b>${F("Pistes d'exploration","Exploration leads")} :</b></p>${p(g("portPistes"))}
+    <p><b>${F("Priorité immédiate","Immediate priority")} :</b></p>${p(g("portPrio"))}
+    <p><b>${F("À transférer vers B.A.V.R.","To carry into B.A.V.R.")} :</b></p>${p(g("portTransfert"))}`:""}
+    <h4>B — ${F("Barrières identifiées","Identified barriers")}</h4>
+    <p><b>${F("Déclarée","Declared")} :</b></p>${p(g("b1"))}
+    <p><b>${F("Implicite","Implicit")} :</b></p>${p(g("b2"))}
+    <p><b>${F("Émotionnelle","Emotional")} :</b></p>${p(g("b3"))}
+    <h4>A — ${F("Fonctions de la barrière","Functions of the barrier")}</h4>${ul(fns)}${g("aNotes")?p(g("aNotes")):""}
+    <h4>V — ${F("Validation émotionnelle","Emotional validation")}</h4>${p(g("vNotes"))}
+    <h4>R — ${F("Plan de réorientation","Reorientation plan")}</h4>
+    <p><b>${F("Cognitive","Cognitive")} :</b></p>${p(g("r1"))}
+    <p><b>${F("Stratégique","Strategic")} :</b></p>${p(g("r2"))}
+    <p><b>${F("Premier petit pas","First small step")} :</b> ${g("r3")||"—"} · <b>${F("Échéance","Deadline")} :</b> ${g("r4")||"—"}</p>
+    <p><b>${F("Identitaire (3 forces — 3 preuves — 3 applications)","Identity (3 strengths — 3 proofs — 3 applications)")} :</b></p>${p(g("r5"))}
+    ${(g("e1")||g("e2")||g("e3")||g("e4")||gaps.length||g("e6")||g("e7")||g("e8")||g("e9")||g("cvText")) ? `
+    <h4>${F("Écart parcours-cible","Path-target gap")}</h4>
+    <p><b>${F("Cible","Target")} :</b> ${g("e1")||"—"} ${g("e2")?(" · "+g("e2")):""}</p>
+    <p><b>${F("Parcours","Background")} :</b> ${g("e3")||"—"} ${F("ans d'expérience","years of experience")} · ${g("e4")||"—"}${recoVal?(" · "+recoLbl[recoVal]):""}</p>
+    ${g("e5")?p(g("e5")):""}
+    ${gaps.length?`<p><b>${F("Facteurs identifiés","Identified factors")} :</b></p>${ul(gaps)}`:""}
+    ${(g("e6")||g("e7")||g("e8"))?`<p><b>${F("Plan à 3 niveaux","3-level plan")} :</b></p><ul>${g("e6")?"<li>N1 — "+g("e6").replace(/\n/g," ")+"</li>":""}${g("e7")?"<li>N2 — "+g("e7").replace(/\n/g," ")+"</li>":""}${g("e8")?"<li>N3 — "+g("e8").replace(/\n/g," ")+"</li>":""}</ul>`:""}
+    ${g("e9")?p(g("e9")):""}
+    ${(g("clinF")||g("clinC")||g("clinX")||g("clinP"))?`<h3>${F("Analyse clinique PAPPE (validée par l'intervenant·e)","PAPPE clinical analysis (validated by the practitioner)")}</h3>
+      ${g("clinF")?`<p><b>${F("Forces observées","Observed strengths")} :</b></p>`+ul(g("clinF").split("\n").filter(Boolean)):""}
+      ${g("clinC")?`<p><b>${F("Compétences transférables","Transferable skills")} :</b></p>`+ul(g("clinC").split("\n").filter(Boolean)):""}
+      ${g("clinX")?`<p><b>${F("Éléments à explorer avec la personne","To explore with the person")} :</b></p>`+ul(g("clinX").split("\n").filter(Boolean)):""}
+      ${g("clinP")?`<p><b>${F("Pistes d'accompagnement","Support avenues")} :</b></p>`+ul(g("clinP").split("\n").filter(Boolean)):""}`:""}
+    ${g("cvText")?`<p><b>${F("Texte du CV (extrait téléversé)","CV text (uploaded extract)")} :</b></p><div style="white-space:pre-wrap;font-size:11.5px;color:var(--gris);background:#FAFAFA;border:1px solid var(--ligne);border-radius:6px;padding:10px;max-height:260px;overflow:auto">${g("cvText").slice(0,4000)}${g("cvText").length>4000?"…":""}</div>${buildCVAnalysisHTML(analyzeCVText(document.getElementById("cvText").value), L)}`:""}` : ""}
+    ${(g("w1")||g("w2")||wsav.length||wspe.length||wsap.length||g("w7")||g("w8")) ? `
+    <h4>${F("Module WSIB — retour au travail","WSIB Module — return to work")}</h4>
+    <p><b>${F("Statut du dossier","File status")} :</b> ${g("w2")?wsStatutLbl[document.getElementById("w2").value]:"—"} ${g("w1")?(" · "+g("w1")):""}</p>
+    ${g("w3")?`<p><b>${F("Limitations documentées","Documented limitations")} :</b></p>${p(g("w3"))}`:""}
+    ${wsav.length?`<p><b>${F("Avant","Before")} :</b></p>${ul(wsav)}${g("w4")?p(g("w4")):""}`:""}
+    ${wspe.length?`<p><b>${F("Pendant","During")} :</b></p>${ul(wspe)}${g("w5")?p(g("w5")):""}`:""}
+    ${wsap.length?`<p><b>${F("Après","After")} :</b></p>${ul(wsap)}${g("w6")?p(g("w6")):""}`:""}
+    ${g("w7")?`<p><b>${F("Coordination","Coordination")} :</b></p>${p(g("w7"))}`:""}
+    ${g("w8")?`<p><b>${F("Prochaine étape","Next step")} :</b> ${g("w8")}</p>`:""}` : ""}
+    <p class="meta" style="margin-top:22px">${F("Méthode B.A.V.R. et cadre PAPPE — © Nelly Folefack, MSW, RSW / UCBH. Document clinique confidentiel.","B.A.V.R. method and PAPPE framework — © Nelly Folefack, MSW, RSW / UCBH. Confidential clinical document.")}</p>`;
+}
+
+/* ================== CV UPLOAD (extraction 100% locale) ================== */
+window.addEventListener("load", ()=>{
+  if(typeof pdfjsLib !== "undefined"){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
+});
+async function extractPDF(buf){
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  let text="";
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it=>it.str).join(" ") + "\n\n";
+  }
+  return text.trim();
+}
+async function handleCV(evt){
+  const file = evt.target.files[0]; if(!file) return;
+  const status = document.getElementById("cvStatus");
+  const showText = ()=>{ document.getElementById("cvText").classList.remove("hidden"); document.getElementById("cvTextLabel").classList.remove("hidden"); document.getElementById("cvAnalyzeBtn").classList.remove("hidden"); };
+  status.textContent = lang==="fr" ? "Extraction en cours…" : "Extracting…";
+  const name = file.name.toLowerCase();
+  try{
+    let text = "";
+    if(name.endsWith(".pdf")){
+      if(typeof pdfjsLib === "undefined") throw new Error("lib-missing");
+      text = await extractPDF(await file.arrayBuffer());
+    } else if(name.endsWith(".docx")){
+      if(typeof mammoth === "undefined") throw new Error("lib-missing");
+      const r = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
+      text = r.value;
+    } else {
+      text = await file.text();
+    }
+    text = text.trim();
+    if(!text) throw new Error("empty");
+    document.getElementById("cvText").value = text;
+    showText();
+    status.textContent = (lang==="fr" ? "✓ Texte extrait de " : "✓ Text extracted from ") + file.name + (lang==="fr" ? " — relisez, puis complétez les champs ci-dessous." : " — review, then complete the fields below.");
+    save();
+  }catch(err){
+    showText();
+    status.textContent = lang==="fr"
+      ? "Extraction automatique indisponible pour ce fichier. Ouvrez-le et collez le texte directement ci-dessous."
+      : "Automatic extraction unavailable for this file. Open it and paste the text directly below.";
+  }
+}
+
+/* ================== LIENS À EXPLORER (co-occurrence entre modules) ================== */
+const THEMES = {
+  interruption: {fr:["interruption","pause","sans emploi","chômage","congé","arrêt"], en:["interruption","pause","unemployed","break","gap","leave"]},
+  sante:        {fr:["santé","maladie","dépression","épuisement","burnout","fatigue"], en:["health","illness","depression","burnout","exhaustion","fatigue"]},
+  famille:      {fr:["famille","enfant","aidant","proche aidant","garde"], en:["family","child","caregiver","childcare"]},
+  immigration:  {fr:["immigration","statut","réfugié","asile","visa","résidence"], en:["immigration","status","refugee","asylum","visa","residency"]},
+  financier:    {fr:["financ","argent","dette","urgence financière"], en:["financ","money","debt","financial urgency"]},
+  confiance:    {fr:["confiance","peur","anxiété","doute","insécurité"], en:["confidence","fear","anxiety","doubt","insecurity"]},
+  reconnaissance:{fr:["reconnaissance","diplôme non reconnu","non reconnu","équivalence"], en:["recognition","credential not recognized","not recognized","equivalency"]}
+};
+const THEME_LABELS = {
+  fr:{interruption:"Interruption / pause",sante:"Santé",famille:"Famille / proche aidant",immigration:"Statut d'immigration",financier:"Contrainte financière",confiance:"Confiance / anxiété",reconnaissance:"Reconnaissance des diplômes"},
+  en:{interruption:"Interruption / break",sante:"Health",famille:"Family / caregiving",immigration:"Immigration status",financier:"Financial constraint",confiance:"Confidence / anxiety",reconnaissance:"Credential recognition"}
+};
+const LINK_FIELDS = [
+  ["cCtx","Contexte","Context"],["paPers","Personne","Person"],["paRes","Parcours (ressources)","Path (resources)"],
+  ["paProj","Projet","Project"],["projAutres","Autres options envisagées","Other options considered"],
+  ["formRaisons","Formation envisagée","Planned training"],["portBesoin","Besoin à approfondir","Need to explore"],
+  ["portBarr","Barrières observées","Observed barriers"],["cvText","CV","CV"]
+];
+
+function renderLinks(){
+  const box = document.getElementById("linksBox");
+  const F = (fr,en)=> lang==="fr"?fr:en;
+  const fieldData = LINK_FIELDS.map(([id,fr,en])=>({id, label:F(fr,en), text:(document.getElementById(id).value||"").toLowerCase()})).filter(f=>f.text.trim());
+
+  const hits = []; // {theme, fields:[label,...]}
+  Object.keys(THEMES).forEach(theme=>{
+    const kws = THEMES[theme][lang] || THEMES[theme].fr;
+    const foundIn = fieldData.filter(f=>kws.some(kw=>f.text.includes(kw))).map(f=>f.label);
+    if(foundIn.length >= 2) hits.push({theme, fields: foundIn});
+  });
+
+  // Croisement avec les écarts détectés dans le CV
+  const cvAnalysis = analyzeCVText(document.getElementById("cvText").value);
+  const cvGapPrompts = [];
+  if(cvAnalysis && cvAnalysis.gaps.length){
+    const narrativeFields = fieldData.filter(f=>f.id!=="cvText");
+    const mentionsInterruption = narrativeFields.filter(f=>(THEMES.interruption[lang]||THEMES.interruption.fr).some(kw=>f.text.includes(kw)));
+    if(mentionsInterruption.length){
+      cvAnalysis.gaps.forEach(g=>{
+        cvGapPrompts.push(F(
+          `Le CV montre une période sans expérience documentée entre ${g.from} et ${g.to}, et le thème « interruption » apparaît aussi dans : ${mentionsInterruption.map(f=>f.label).join(", ")}. Souhaitez-vous explorer ce lien directement avec la personne?`,
+          `The CV shows an undocumented period between ${g.from} and ${g.to}, and the theme "interruption" also appears in: ${mentionsInterruption.map(f=>f.label).join(", ")}. Would you like to explore this link directly with the person?`
+        ));
+      });
+    }
+  }
+
+  if(!hits.length && !cvGapPrompts.length){
+    box.innerHTML = `<p class="hint">${F("Aucun recoupement évident détecté pour l'instant — cela ne signifie pas qu'il n'y en a pas. Continuez à documenter au fil de l'entretien.","No obvious overlap detected yet — this doesn't mean there isn't one. Keep documenting as the interview progresses.")}</p>`;
+  } else {
+    let html = `<div class="pill-note" style="border-left-color:var(--r)"><b>${F("Thèmes qui reviennent à plusieurs endroits","Themes appearing in several places")}</b><ul style="padding-left:18px;margin-top:6px">`;
+    hits.forEach(h=>{
+      html += `<li>${F(`Le thème « ${THEME_LABELS[lang][h.theme]} » apparaît dans : ${h.fields.join(", ")}. Souhaitez-vous l'explorer davantage?`, `The theme "${THEME_LABELS[lang][h.theme]}" appears in: ${h.fields.join(", ")}. Would you like to explore it further?`)}</li>`;
+    });
+    cvGapPrompts.forEach(msg=>{ html += `<li>${msg}</li>`; });
+    html += `</ul></div>`;
+    box.innerHTML = html;
+  }
+  box.classList.remove("hidden");
+}
+
+/* ================== ANALYSE DU CV (lecture technique + pistes) ================== */
+const CURRENT_YEAR = new Date().getFullYear();
+const SECTION_KEYWORDS = {
+  experience: ["expérience","experience","emploi","employment","historique de travail","work history","parcours professionnel"],
+  formation:  ["formation","éducation","education","diplôme","diploma","études","academic"],
+  competences:["compétence","competence","skill","aptitude","habileté"],
+  langues:    ["langue","language","bilingue","bilingual"],
+  certifications:["certification","certificat","license","licence","permis"]
+};
+const SECTION_LABELS = {
+  fr:{experience:"Expérience professionnelle",formation:"Formation / diplômes",competences:"Compétences",langues:"Langues",certifications:"Certifications"},
+  en:{experience:"Work experience",formation:"Education / credentials",competences:"Skills",langues:"Languages",certifications:"Certifications"}
+};
+
+function analyzeCVText(text){
+  if(!text || !text.trim()) return null;
+  const lower = text.toLowerCase();
+  const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  const sectionsFound = [], sectionsMissing = [];
+  Object.keys(SECTION_KEYWORDS).forEach(key=>{
+    const hit = SECTION_KEYWORDS[key].some(kw=>lower.includes(kw));
+    (hit ? sectionsFound : sectionsMissing).push(key);
+  });
+  const hasEmail = /[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(text);
+  const hasPhone = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(text);
+  const hasVolunteer = /bénévol|volunteer/i.test(text);
+
+  const yearRe = /((?:19|20)\d{2})\s*[-–—à]{1,3}\s*((?:19|20)\d{2}|présent|present|aujourd'hui|now|maintenant|current)/gi;
+  let m, periods = [];
+  while((m = yearRe.exec(text)) !== null){
+    const start = parseInt(m[1],10);
+    const endRaw = m[2].toLowerCase();
+    const end = /présent|present|aujourd|now|maintenant|current/.test(endRaw) ? CURRENT_YEAR : parseInt(endRaw,10);
+    if(end >= start) periods.push({start, end, raw:m[0]});
+  }
+  periods.sort((a,b)=>a.start-b.start);
+  periods = periods.filter((p,i)=>i===0 || !(p.start===periods[i-1].start && p.end===periods[i-1].end));
+  const gaps = [];
+  for(let i=0;i<periods.length-1;i++){
+    const gapYears = periods[i+1].start - periods[i].end;
+    if(gapYears >= 1) gaps.push({from:periods[i].end, to:periods[i+1].start, years:gapYears});
+  }
+  return {wordCount, sectionsFound, sectionsMissing, hasEmail, hasPhone, hasVolunteer, periods, gaps};
+}
+
+function renderCVAnalysis(){
+  const box = document.getElementById("cvAnalysisBox");
+  const analysis = analyzeCVText(document.getElementById("cvText").value);
+  box.innerHTML = buildCVAnalysisHTML(analysis, lang);
+  box.classList.remove("hidden");
+}
+
+function buildCVAnalysisHTML(a, L){
+  const F = (fr,en)=> L==="fr"?fr:en;
+  if(!a) return `<p class="hint">${F("Aucun texte à analyser.","No text to analyze.")}</p>`;
+  const secLbl = SECTION_LABELS[L];
+  const foundStr = a.sectionsFound.map(k=>secLbl[k]).join(", ") || F("aucune détectée","none detected");
+  const missingStr = a.sectionsMissing.map(k=>secLbl[k]).join(", ") || F("aucune","none");
+
+  let html = `<div class="pill-note" style="border-left-color:var(--r)"><b>${F("Lecture technique (détection automatique par mots-clés)","Technical reading (automatic keyword detection)")}</b><ul style="padding-left:18px;margin-top:6px">
+    <li>${F("Longueur approximative","Approximate length")}: ${a.wordCount} ${F("mots","words")}</li>
+    <li>${F("Sections repérées","Sections detected")}: ${foundStr}</li>
+    <li>${F("Sections non détectées","Sections not detected")}: ${missingStr}</li>
+    <li>${F("Coordonnées détectées","Contact info detected")}: ${F("courriel","email")} ${a.hasEmail?"✓":"✗"} · ${F("téléphone","phone")} ${a.hasPhone?"✓":"✗"}</li>
+    <li>${F("Périodes datées identifiées","Dated periods identified")}: ${a.periods.length ? a.periods.map(p=>p.raw).join(" · ") : F("aucune détectée","none detected")}</li>
+  </ul><p class="hint" style="margin-top:6px">${F("Détection automatique par mots-clés — peut être imparfaite selon la mise en page du CV. À vérifier.","Automatic keyword-based detection — may be imperfect depending on CV layout. To be verified.")}</p></div>`;
+
+  html += `<div class="pill-note" style="border-left-color:var(--vert)"><b>${F("Pistes de réflexion clinique","Clinical reflection prompts")}</b><ul style="padding-left:18px;margin-top:6px">`;
+  if(a.gaps.length){
+    a.gaps.forEach(g=>{
+      html += `<li>${F(`Un écart d'environ ${g.years} an(s) est repéré entre ${g.from} et ${g.to} — à explorer avec la personne (migration, santé, famille, études, autre).`, `A gap of roughly ${g.years} year(s) appears between ${g.from} and ${g.to} — worth exploring with the person (migration, health, family, studies, other).`)}</li>`;
+    });
+  }
+  if(a.periods.length >= 4){
+    html += `<li>${F(`Plusieurs périodes distinctes apparaissent (~${a.periods.length}) — quelles transitions valent la peine d'être explorées ensemble?`, `Several distinct periods appear (~${a.periods.length}) — which transitions are worth exploring together?`)}</li>`;
+  }
+  if(a.hasVolunteer){
+    html += `<li>${F("Une expérience de bénévolat est mentionnée — pourrait être une ressource à valoriser (voir axe Parcours de PAPPE).","Volunteer experience is mentioned — could be a resource worth highlighting (see PAPPE's Path axis).")}</li>`;
+  }
+  if(a.sectionsMissing.includes("formation")){
+    html += `<li>${F("Aucune section formation/diplôme clairement repérée — vérifier si c'est un choix de présentation ou une absence réelle à documenter.","No education/credential section clearly detected — check whether this is a presentation choice or a real absence to document.")}</li>`;
+  }
+  html += `<li>${F("Quelles compétences transférables se dégagent de ce parcours, au-delà des titres de poste?","What transferable skills emerge from this background, beyond job titles?")}</li>`;
+  html += `<li>${F("Quels changements de direction ou incohérences apparentes méritent d'être discutés avec la personne?","What changes in direction or apparent inconsistencies deserve discussion with the person?")}</li>`;
+  html += `</ul></div>`;
+  return html;
+}
+
+/* ================== INIT ================== */
+load(); renderLists(); stepGo(0); buildReport();
+if(document.getElementById("cvText").value.trim()){
+  document.getElementById("cvText").classList.remove("hidden");
+  document.getElementById("cvTextLabel").classList.remove("hidden");
+  document.getElementById("cvAnalyzeBtn").classList.remove("hidden");
+}
+
+/* ================== ANALYSE CLINIQUE PAPPE (locale) ================== */
+function genClinical(){
+  const F=(fr,en)=>lang==="fr"?fr:en;
+  const text=document.getElementById("cvText").value;
+  if(!text.trim()){alert(F("Téléversez ou collez d'abord le texte du CV ci-dessus.","Upload or paste the CV text above first."));return;}
+  const filled=["clinF","clinC","clinX","clinQ","clinP"].some(id=>document.getElementById(id).value.trim());
+  if(filled&&!confirm(F("Remplacer le contenu déjà saisi dans les 5 sections?","Replace the content already entered in the 5 sections?")))return;
+  const a=analyzeCVText(text)||{sectionsFound:[],sectionsMissing:[],periods:[],gaps:[],hasVolunteer:false,hasEmail:false,hasPhone:false};
+  const lower=text.toLowerCase();
+  const has=arr=>arr.some(k=>lower.includes(k));
+  const LEX=[
+    [["service à la client","customer service","clientèle","caisse","cashier","vente","sales","accueil"],F("Service à la clientèle et relation avec le public","Customer service and public-facing work")],
+    [["gestion","manag","supervis","coordinat","chef d'équipe","team lead","directeur","director"],F("Coordination d'équipe et gestion des priorités","Team coordination and priority management")],
+    [["administrat","bureau","office","dossier","saisie","data entry","réception","secrétariat","clerical"],F("Travail administratif et tenue de dossiers","Administrative work and record-keeping")],
+    [["soin","care","patient","préposé","psw","accompagnement","éducat","enfant","child","garderie"],F("Accompagnement de personnes et posture d'aide","Supporting people in a helping role")],
+    [["logistique","entrepôt","warehouse","inventaire","livraison","delivery","conduite","driver","chariot","forklift"],F("Logistique, manutention et fiabilité opérationnelle","Logistics, handling and operational reliability")],
+    [["informatique","excel","word","logiciel","software","réseau","numérique","digital","données"],F("Aisance avec les outils numériques","Comfort with digital tools")],
+    [["comptab","account","finance","paie","payroll","budget","facturation","invoic"],F("Rigueur comptable et suivi financier","Accounting rigour and financial tracking")],
+    [["communication","présentation","rédaction","writing","marketing","réseaux sociaux","social media"],F("Communication écrite et orale","Written and oral communication")],
+    [["enseign","teach","formation","training","formateur","tutorat","professeur"],F("Transmission de savoirs et formation d'autrui","Knowledge transfer and training others")],
+    [["construction","électric","plomb","soudure","weld","mécanique","maintenance","hvac","charpent"],F("Compétences techniques de métier","Skilled-trades technical competencies")]
+  ];
+  const comp=LEX.filter(x=>has(x[0])).map(x=>x[1]);
+  const langsFound=[];
+  [["français","french"],["anglais","english"],["espagnol","spanish"],["arabe","arabic"],["lingala"],["swahili"],["portugais","portuguese"],["mandarin","chinese"],["farsi","persian"]].forEach(g=>{if(has(g))langsFound.push(g[0]);});
+  const yrs=a.periods.length?Math.max(...a.periods.map(p=>p.end))-Math.min(...a.periods.map(p=>p.start)):0;
+  const forces=[];
+  if(a.periods.length)forces.push(F("Parcours documenté sur environ "+yrs+" an(s) ("+a.periods.length+" période(s) datée(s))","Background documented over roughly "+yrs+" year(s) ("+a.periods.length+" dated period(s))"));
+  if(!a.gaps.length&&a.periods.length>=2)forces.push(F("Continuité d'emploi — aucune interruption majeure repérée","Employment continuity — no major gap detected"));
+  if(a.hasVolunteer)forces.push(F("Engagement bénévole mentionné — initiative et ancrage communautaire","Volunteer involvement mentioned — initiative and community roots"));
+  if(a.sectionsFound.includes("formation"))forces.push(F("Formation et diplômes documentés","Education and credentials documented"));
+  if(langsFound.length>=2)forces.push(F("Profil multilingue repéré ("+langsFound.join(", ")+")","Multilingual profile detected ("+langsFound.join(", ")+")"));
+  if(comp.length>=3)forces.push(F("Polyvalence : plusieurs familles de compétences coexistent","Versatility: several skill families coexist"));
+  if(!forces.length)forces.push(F("Peu de signaux détectables automatiquement — à documenter à partir du récit de la personne","Few automatically detectable signals — document from the person's narrative"));
+  const explo=[];
+  a.gaps.forEach(g=>explo.push(F("Période "+g.from+" → "+g.to+" (~"+g.years+" an(s)) : contexte à comprendre avec la personne (migration, famille, santé, études…)","Period "+g.from+" → "+g.to+" (~"+g.years+" yr): context to understand with the person (migration, family, health, studies…)")));
+  if(a.periods.length>=4)explo.push(F("Plusieurs transitions de poste : lesquelles ont été choisies, lesquelles subies?","Several job transitions: which were chosen, which endured?"));
+  if(a.sectionsMissing.includes("formation"))explo.push(F("Formation non visible dans le CV : choix de présentation ou parcours à documenter?","Education not visible in the CV: presentation choice or background to document?"));
+  if(!a.hasEmail||!a.hasPhone)explo.push(F("Coordonnées incomplètes sur le CV — à vérifier avec la personne","Incomplete contact info on the CV — verify with the person"));
+  if(!explo.length)explo.push(F("Le récit derrière chaque étape : ce que la personne retient, ce qu'elle a quitté, ce qu'elle cherche","The story behind each step: what the person keeps, left, and seeks"));
+  const q=[];
+  if(a.gaps.length)q.push(F("« Racontez-moi la période "+a.gaps[0].from+"–"+a.gaps[0].to+" — qu'est-ce qui occupait votre énergie à ce moment-là? »","\u201cTell me about "+a.gaps[0].from+"\u2013"+a.gaps[0].to+" — what was taking your energy then?\u201d"));
+  q.push(F("« De quoi êtes-vous le plus fier·ère dans ce parcours? » (validation avant analyse)","\u201cWhat are you proudest of in this journey?\u201d (validation before analysis)"));
+  q.push(F("« Qu'est-ce que ce CV ne dit pas de vous? »","\u201cWhat does this CV not say about you?\u201d"));
+  if(a.periods.length>=3)q.push(F("« Parmi ces expériences, laquelle vous ressemble le plus — et pourquoi? »","\u201cWhich of these experiences feels most like you — and why?\u201d"));
+  q.push(F("« En regardant le poste visé : qu'est-ce qui vous semble déjà acquis, et qu'est-ce qui vous inquiète? »","\u201cLooking at the target role: what feels already in hand, and what worries you?\u201d"));
+  const pistes=[];
+  if(a.sectionsMissing.length)pistes.push(F("Retravailler le CV — sections à ajouter ou clarifier : "+a.sectionsMissing.join(", "),"Rework the CV — sections to add or clarify: "+a.sectionsMissing.join(", ")));
+  if(a.periods.length>=2)pistes.push(F("Préparer un pitch de 60 secondes à partir des forces validées ensemble","Prepare a 60-second pitch from the strengths validated together"));
+  if(!a.hasVolunteer)pistes.push(F("Explorer le bénévolat ciblé comme stratégie d'expérience canadienne et de réseau","Explore targeted volunteering for Canadian experience and network"));
+  pistes.push(F("Croiser avec la séance B.A.V.R. avant toute réorientation (validation d'abord)","Cross-reference with the B.A.V.R. session before any reorientation (validation first)"));
+  pistes.push(F("Orientation interne UCBH à discuter selon le besoin validé : ESSOR, SILFA, SPSJ, PARENTALIS","Internal UCBH referral to discuss per validated need: ESSOR, SILFA, SPSJ, PARENTALIS"));
+  const setv=(id,arr)=>{document.getElementById(id).value=arr.join("\n");};
+  setv("clinF",forces);
+  setv("clinC",comp.length?comp:[F("À compléter à partir de l'entretien","To complete from the interview")]);
+  setv("clinX",explo);setv("clinQ",q.slice(0,5));setv("clinP",pistes);
+  save();
+}
+
+/* ================== EXPORT VERS LE CRM UCBH ================== */
+function exportToCRM(){
+  const F=(fr,en)=>lang==="fr"?fr:en;
+  const g=id=>document.getElementById(id).value.trim();
+  const lines=id=>g(id).split("\n").map(s=>s.trim()).filter(Boolean);
+  const d={type:"seance_bavr",version:1,
+    client:{code:g("cCode"),idCRM:g("cCRM")},
+    date:g("cDate"),intervenant:g("cInt"),
+    programme:"ESSOR",service:"Séance B.A.V.R. — PAPPE",statut:"Complété",
+    resume:{forces:lines("clinF"),competencesTransferables:lines("clinC"),aExplorer:lines("clinX"),pistes:lines("clinP")}};
+  if(g("silfaRec"))d.orientation={recommande:"SILFA",suite:"En attente"};
+  const blob=new Blob([JSON.stringify(d,null,1)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="BAVR_vers_CRM_"+(g("cCode")||"client")+"_"+(g("cDate")||new Date().toISOString().slice(0,10))+".json";
+  a.click();URL.revokeObjectURL(a.href);
+  alert(F("Fichier exporté. Dans le CRM UCBH : Tableau de bord → « Importer séance BAVR », vérifiez la fiche pré-remplie, puis Enregistrer.","File exported. In the UCBH CRM: Dashboard → \u201cImport BAVR session\u201d, review the pre-filled record, then Save."));
+}
+
+</script>
+</body>
+</html>
